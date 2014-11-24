@@ -12,6 +12,9 @@
 @implementation CPTutorial
 
 +(BOOL)shouldDisplayTipWithName:(NSString*)tipName{
+    if(!tipName){
+        return YES;
+    }
     NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
     NSString *targetKey = TIP_KEY(tipName);
     id val = [settings valueForKey:targetKey];

@@ -14,11 +14,11 @@
     balloon.translatesAutoresizingMaskIntoConstraints = NO;
     balloon.text = text;
     [self.superview addSubview:balloon];
-    //check if self frame is above or below the screen's midpoint.
+    //check if self frame is above or below the superview's midpoint.
     float midpointY = self.frame.origin.y + self.frame.size.height / 2;
-    BOOL below = NO;
-    if(midpointY > SCREEN_HEIGHT){
-        below = YES;
+    BOOL below = YES;
+    if(midpointY > self.superview.frame.size.height / 2){
+        below = NO;
     }
     balloon.manualTipPosition = YES;
     balloon.tipAboveBalloon = below;

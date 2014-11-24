@@ -21,6 +21,11 @@ NSString *const CPTutorialSettingDismissOnTouch= @"dismissOnTouch";
 NSString *const CPTutorialSettingAnimationType = @"animationType";
 NSString *const CPTutorialSettingDisplayDelay = @"displayDelay";
 NSString *const CPTutorialSettingContentPadding = @"contentPadding";
+NSString *const CPTutorialSettingTextColor = @"textColor";
+NSString *const CPTutorialSettingDisplaysTip = @"displaysTip";
+NSString *const CPTutorialSettingFontSize = @"fontSize";
+NSString *const CPTutorialSettingFontName = @"fontName";
+
 
 typedef enum{
     TutorialDrawModeNoTargetView = 0,
@@ -48,24 +53,61 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     [super initialize];
     _CPTutorialBalloonDefaults =
     [@{
-      CPTutorialSettingBorderColor: [UIColor grayColor],
-      CPTutorialSettingAnimationType: @"collapse",
-      CPTutorialSettingBorderWidth: @(2.0f),
-      CPTutorialSettingCornerRadius: @(10.0f),
-      CPTutorialSettingDismissOnTouch: @(YES),
-      CPTutorialSettingDisplayDelay: @(0.0f),
-      CPTutorialSettingFillColor: [UIColor whiteColor],
-      CPTutorialSettingManualTipPosition: @(NO),
-      CPTutorialSettingTipAboveBalloon: @(NO),
-      CPTutorialSettingTipSize: [NSValue valueWithCGSize:CGSizeMake(18, 14)],
-      CPTutorialSettingContentPadding: @(10.0f),
-      } mutableCopy];
+       CPTutorialSettingBorderColor: [UIColor grayColor],
+       CPTutorialSettingAnimationType: @"collapse",
+       CPTutorialSettingBorderWidth: @(2.0f),
+       CPTutorialSettingCornerRadius: @(10.0f),
+       CPTutorialSettingDismissOnTouch: @(YES),
+       CPTutorialSettingDisplayDelay: @(0.0f),
+       CPTutorialSettingFillColor: [UIColor whiteColor],
+       CPTutorialSettingManualTipPosition: @(NO),
+       CPTutorialSettingTipAboveBalloon: @(NO),
+       CPTutorialSettingTipSize: [NSValue valueWithCGSize:CGSizeMake(18, 14)],
+       CPTutorialSettingContentPadding: @(10.0f),
+       CPTutorialSettingTextColor: [UIColor blackColor],
+       CPTutorialSettingDisplaysTip: @(YES),
+       CPTutorialSettingFontName: @"HelveticaNeue",
+       CPTutorialSettingFontSize: @(14)
+       } mutableCopy];
 }
 
 -(instancetype)init{
     self = [super init];
     [self initializeDefaultValues];
     return self;
+}
+
+-(UIFont*)resolvedFontWithName:(NSString*)fontName size:(float)fontSize{
+    //e.g. "Helvetica Neue UltraLight" should resolve to "HelveticaNeue-UltraLight" (case insensitive)
+    UIFont *font = [UIFont fontWithName:fontName size:fontSize];
+    if(!font){
+        //go advanced
+        static NSArray *fontModifiers;
+        if(!fontModifiers){
+            fontModifiers = @[ @"light", @"thin", @"ultralight", @"bold", @"condensed", @"wide", @"extrablack", @"italic", @"regular", @"oblique", @"medium", @"black", @"semibold", @"demibold" ];
+        }
+        NSString *lowerFontName = [fontName lowercaseString];
+        NSUInteger locationOfFirstModifier = NSNotFound;
+        for (NSString *token in fontModifiers) {
+            NSUInteger currentLocation = [lowerFontName rangeOfString:token].location;
+            if(currentLocation != NSNotFound && currentLocation < locationOfFirstModifier){
+                locationOfFirstModifier = currentLocation;
+            }
+        }
+        if(locationOfFirstModifier != NSNotFound){
+            NSString *stringBefore = [[fontName substringToIndex:locationOfFirstModifier] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            NSString *stringAfter = [[fontName substringFromIndex:locationOfFirstModifier] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            stringBefore = [stringBefore stringByReplacingOccurrencesOfString:@" " withString:@""];
+            stringAfter = [stringAfter stringByReplacingOccurrencesOfString:@" " withString:@""];
+            //now join them, apparently capitalization doesn't matter so HelveticaNeue == heLveticaneuE
+            //but we need the dash in between
+            NSString *resultFontName = [NSString stringWithFormat:@"%@-%@", stringBefore, stringAfter];
+            //now search for that font
+            font = [UIFont fontWithName:resultFontName size:fontSize];
+        }
+        
+    }
+    return font;
 }
 
 -(id)initWithCoder:(NSCoder *)aDecoder{
@@ -84,6 +126,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     return _CPTutorialBalloonDefaults;
 }
 
+
 -(void)initializeDefaultValues{
     self.borderColor = _CPTutorialBalloonDefaults[CPTutorialSettingBorderColor];
     self.animationType = _CPTutorialBalloonDefaults[CPTutorialSettingAnimationType];
@@ -96,19 +139,24 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.tipAboveBalloon = [_CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] boolValue];
     self.tipSize = [_CPTutorialBalloonDefaults[CPTutorialSettingTipSize] CGSizeValue];
     self.contentPadding = [_CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] floatValue];
+    self.textColor = _CPTutorialBalloonDefaults[CPTutorialSettingTextColor];
+    self.displaysTip = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] boolValue];
+    self.fontName = _CPTutorialBalloonDefaults[CPTutorialSettingFontName];
+    self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
 }
 
 -(void)addAndCenterItemUsingAutolayout:(UIView*)item{
-    NSLayoutConstraint *leftConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeading multiplier:1 constant:10];
-    NSLayoutConstraint *rightConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTrailing multiplier:1 constant:-10];
-    NSLayoutConstraint *topConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTopMargin multiplier:1 constant:10];
-    NSLayoutConstraint *bottomConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottomMargin multiplier:1 constant:-10];
+    NSLayoutConstraint *leftConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeading multiplier:1 constant:self.contentPadding];
+    NSLayoutConstraint *rightConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTrailing multiplier:1 constant:-(self.contentPadding)];
+    NSLayoutConstraint *topConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1 constant:self.contentPadding];
+    NSLayoutConstraint *bottomConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1 constant:-(self.contentPadding)];
     if(item == textLabel){
         textLabelBottomConstraint = bottomConstraint;
         textLabelTopConstraint = topConstraint;
     }
     [self addSubview:item];
     [self addConstraints:@[leftConstraint, rightConstraint, topConstraint, bottomConstraint]];
+    //[item setContentCompressionResistancePriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
 }
 
 -(NSLayoutConstraint*)heightConstraint{
@@ -124,11 +172,20 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     return heightConstraint;
 }
 
+-(void)setTextColor:(UIColor *)textColor{
+    _textColor = textColor;
+    textLabel.textColor = textColor;
+}
+
 -(void)setText:(NSString *)text{
     if(!textLabel){
         textLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         textLabel.textAlignment = NSTextAlignmentCenter;
         textLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        textLabel.numberOfLines = 0;
+        textLabel.textColor = self.textColor;
+        textLabel.preferredMaxLayoutWidth = 300;
+        textLabel.font = [self resolvedFontWithName:self.fontName size:self.fontSize];
         [self addAndCenterItemUsingAutolayout:textLabel];
     }
     
@@ -158,6 +215,16 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
+-(void)setFontName:(NSString *)fontName{
+    _fontName = fontName;
+    textLabel.font = [self resolvedFontWithName:fontName size:self.fontSize];
+}
+
+-(void)setFontSize:(float)fontSize{
+    _fontSize = fontSize;
+    textLabel.font = [self resolvedFontWithName:self.fontName size:fontSize];
+}
+
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event{
     [super touchesBegan:touches withEvent:event];
@@ -167,6 +234,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 }
 
 -(void)dismiss{
+    TutorialDrawMode targetDrawMode = [self targetDrawMode];
     if(self.tipName){
         [CPTutorial markTipCompletedWithTipName:self.tipName];
     }
@@ -180,7 +248,19 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         [self removeFromSuperview];
     }else{
         //default: collapse
-        CGAffineTransform targetTransform = CGAffineTransformMakeTranslation(0, self.frame.size.height / 2);
+        CGAffineTransform targetTransform;
+        switch (targetDrawMode) {
+            case TutorialDrawModeNoTargetView:
+                targetTransform = CGAffineTransformIdentity;
+                break;
+            case TutorialDrawModeAboveTargetView:
+                targetTransform = CGAffineTransformMakeTranslation(0, self.frame.size.height / 2);
+                break;
+            case TutorialDrawModeBelowTargetView:
+                targetTransform = CGAffineTransformMakeTranslation(0, -self.frame.size.height / 2);
+            default:
+                break;
+        }
         targetTransform = CGAffineTransformScale(targetTransform, 0.1, 0.001);
         [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
             self.transform = targetTransform;
@@ -205,15 +285,34 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(void)didMoveToSuperview{
     [super didMoveToSuperview];
-    if(self.tipName && ![CPTutorial shouldDisplayTipWithName:self.tipName]){
+    if(![CPTutorial shouldDisplayTipWithName:self.tipName]){
         [self removeFromSuperview];
     }
+}
+
+-(void)setTipName:(NSString *)tipName{
+    _tipName = tipName;
+    if(self.superview && ![CPTutorial shouldDisplayTipWithName:tipName]){
+        [self removeFromSuperview];
+    }
+}
+
+-(TutorialDrawMode)targetDrawMode{
+    TutorialDrawMode targetDrawMode = drawMode;
+    if(self.manualTipPosition){
+        if(self.tipAboveBalloon){
+            targetDrawMode = TutorialDrawModeBelowTargetView;
+        }else{
+            targetDrawMode = TutorialDrawModeAboveTargetView;
+        }
+    }
+    return targetDrawMode;
 }
 
 - (void)drawRect:(CGRect)rect {
     [super drawRect:rect];
     UIColor *fillColor;
-    TutorialDrawMode targetDrawMode = drawMode;
+    TutorialDrawMode targetDrawMode = [self targetDrawMode];
     if(!self.fillColor){
         fillColor = [UIColor clearColor];
     }else{
@@ -225,13 +324,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }else{
         tip = self.tipSize;
     }
-    if(self.manualTipPosition){
-        if(self.tipAboveBalloon){
-            targetDrawMode = TutorialDrawModeBelowTargetView;
-        }else{
-            targetDrawMode = TutorialDrawModeAboveTargetView;
-        }
-    }
+    
     switch (targetDrawMode) {
         case TutorialDrawModeAboveTargetView:
             textLabelTopConstraint.constant = self.contentPadding;
@@ -285,7 +378,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     next = CGPointMake(rect.origin.x + self.cornerRadius, rect.origin.y + rect.size.height);
     control = CGPointMake(rect.origin.x, rect.origin.y + rect.size.height);
     ADD_NEXT_ARC;
-    if(targetDrawMode == TutorialDrawModeAboveTargetView){
+    if(targetDrawMode == TutorialDrawModeAboveTargetView && self.displaysTip){
         //we should add balloon tip
         //find the X location of the parent view on the screen
         float targetXLocation = targetCenter.x;
@@ -320,7 +413,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     next = CGPointMake(rect.origin.x + rect.size.width - self.cornerRadius, rect.origin.y);
     control = CGPointMake(rect.origin.x + rect.size.width, rect.origin.y);
     ADD_NEXT_ARC;
-    if(targetDrawMode == TutorialDrawModeBelowTargetView){
+    if(targetDrawMode == TutorialDrawModeBelowTargetView && self.displaysTip){
         //we should add balloon tip
         //find the X location of the parent view on the screen
         float targetXLocation = targetCenter.x;
