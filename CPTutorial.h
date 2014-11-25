@@ -24,5 +24,12 @@
 +(void)markTipCompletedWithTipName:(NSString*)tipName;
 +(UILabel*)label;
 
++(void)beginStepsWithTutorialName:(NSString*)tutorialName;
++(void)endSteps;
+
+//to be called internally. don't call this method
++(void)processTutorialBalloon:(CPTutorialBalloon*)balloon;
++(BOOL)isRecordingValidTutorial;
+
 @end
 

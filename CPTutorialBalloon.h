@@ -20,6 +20,17 @@ extern NSString *const CPTutorialSettingDisplaysTip;
 extern NSString *const CPTutorialSettingFontSize;
 extern NSString *const CPTutorialSettingFontName;
 
+typedef void (^CPTutorialAction)();
+
+typedef enum{
+    TutorialBalloonStateWaitingForSignal,
+    TutorialBalloonStateWaitingForDelay,
+    TutorialBalloonStateAnimatingIn,
+    TutorialBalloonStateDisplaying,
+    TutorialBalloonStateAnimatingOut,
+    TutorialBalloonStateDismissed
+}TutorialBalloonState;
+
 
 
 IB_DESIGNABLE
@@ -47,11 +58,11 @@ IB_DESIGNABLE
 //font size of the text
 @property(nonatomic) IBInspectable float fontSize;
 
-//font name of the text. accepts both plain text "Helvetica Neue Light" and iOS-friendly "HelveticaNeue-Light" names. here is a nice list for you: http://iosfonts.com
+//font name of the text. accepts both plain text "Helvetica Neue Light" and iOS-friendly "HelveticaNeue-Light" names. here is a nice list for you: http://iosfonts.com. custom fonts in your bundle should also work, though honestly I haven't tested it.
 @property(nonatomic) IBInspectable NSString *fontName;
 
 //fill color of the balloon
-@property IBInspectable UIColor *fillColor;
+@property(nonatomic) IBInspectable UIColor *fillColor;
 
 //corner radius of the balloon
 @property(nonatomic) IBInspectable float cornerRadius;
@@ -66,10 +77,19 @@ IB_DESIGNABLE
 @property IBInspectable BOOL tipAboveBalloon;
 @property IBInspectable BOOL dismissOnTouch;
 @property IBInspectable NSString *animationType; //currently supported: fade, collapse, none. default: collapse
-@property IBInspectable float displayDelay;
+
+//delay before displaying the balloon, in seconds
+@property(nonatomic) IBInspectable float displayDelay;
 //unique name of the tip
 @property IBInspectable float contentPadding;
 
+@property(copy) CPTutorialAction dismissHandler;
+@property BOOL shouldFireDismissHandlerEvenIfDisplayIsSkipped;
+
+@property(readonly) TutorialBalloonState balloonState;
+
+-(instancetype)hold;
+-(instancetype)signal;
 
 
 @end

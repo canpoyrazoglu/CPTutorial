@@ -33,6 +33,7 @@ typedef enum{
     TutorialDrawModeBelowTargetView,
 }TutorialDrawMode;
 
+
 static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 @implementation CPTutorialBalloon{
@@ -40,11 +41,27 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     UILabel *textLabel;
     NSLayoutConstraint *textLabelTopConstraint;
     NSLayoutConstraint *textLabelBottomConstraint;
+    BOOL dismissedWithoutBeingDisplayed;
+    float targetAlpha;
+    TutorialBalloonState balloonState;
+}
+
+-(TutorialBalloonState)balloonState{
+    return balloonState;
 }
 
 -(void)setCornerRadius:(float)cornerRadius{
     _cornerRadius = cornerRadius;
     if(_cornerRadius){
+        self.opaque = NO;
+    }
+}
+
+-(void)setFillColor:(UIColor *)fillColor{
+    _fillColor = fillColor;
+    float alpha, white;
+    [fillColor getWhite:&white alpha:&alpha];
+    if(alpha < 1.0f){
         self.opaque = NO;
     }
 }
@@ -59,7 +76,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
        CPTutorialSettingCornerRadius: @(10.0f),
        CPTutorialSettingDismissOnTouch: @(YES),
        CPTutorialSettingDisplayDelay: @(0.0f),
-       CPTutorialSettingFillColor: [UIColor whiteColor],
+       CPTutorialSettingFillColor: [UIColor colorWithWhite:1 alpha:0.95],
        CPTutorialSettingManualTipPosition: @(NO),
        CPTutorialSettingTipAboveBalloon: @(NO),
        CPTutorialSettingTipSize: [NSValue valueWithCGSize:CGSizeMake(18, 14)],
@@ -128,6 +145,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 
 -(void)initializeDefaultValues{
+    balloonState = TutorialBalloonStateWaitingForSignal;
     self.borderColor = _CPTutorialBalloonDefaults[CPTutorialSettingBorderColor];
     self.animationType = _CPTutorialBalloonDefaults[CPTutorialSettingAnimationType];
     self.borderWidth = [_CPTutorialBalloonDefaults[CPTutorialSettingBorderWidth] floatValue];
@@ -143,6 +161,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.displaysTip = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] boolValue];
     self.fontName = _CPTutorialBalloonDefaults[CPTutorialSettingFontName];
     self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
+    
+    [CPTutorial processTutorialBalloon:self];
 }
 
 -(void)addAndCenterItemUsingAutolayout:(UIView*)item{
@@ -208,7 +228,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         //check if at upper or lower half, checking the center-Y looks nice for this job
         //calculate the center-Y of the target view
         float centerY = targetView.frame.origin.y + targetView.frame.size.height / 2;
-        BOOL aboveScreen = (centerY < SCREEN_HEIGHT / 2);
+        BOOL aboveScreen = (centerY < targetView.superview.frame.size.height / 2);
         drawMode = (aboveScreen ? TutorialDrawModeBelowTargetView : TutorialDrawModeAboveTargetView);
     }else{
         drawMode = TutorialDrawModeNoTargetView;
@@ -233,8 +253,26 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
+-(void)removeFromSuperview{
+    [super removeFromSuperview];
+    if(self.dismissHandler){
+        if(!dismissedWithoutBeingDisplayed || self.shouldFireDismissHandlerEvenIfDisplayIsSkipped){
+            self.dismissHandler();
+        }
+    }
+}
+
+-(void)setDisplayDelay:(float)displayDelay{
+    _displayDelay = displayDelay;
+    if(displayDelay && balloonState == TutorialBalloonStateWaitingForDelay){
+        [self hold];
+        [self signal]; //[re]start timer
+    }
+}
+
 -(void)dismiss{
     TutorialDrawMode targetDrawMode = [self targetDrawMode];
+    dismissedWithoutBeingDisplayed = YES;
     if(self.tipName){
         [CPTutorial markTipCompletedWithTipName:self.tipName];
     }
@@ -283,8 +321,68 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.layer.masksToBounds = NO;
 }
 
+-(instancetype)signal{
+    balloonState = TutorialBalloonStateWaitingForDelay;
+    [self performSelector:@selector(present) withObject:nil afterDelay:self.displayDelay];
+    return self;
+}
+
+-(void)present{
+    if(balloonState != TutorialBalloonStateWaitingForDelay && balloonState != TutorialBalloonStateWaitingForSignal){
+        return;
+    }
+    balloonState = TutorialBalloonStateAnimatingIn;
+    self.hidden = NO;
+    self.alpha = 0;
+    [self setNeedsDisplay];
+    if([self.animationType isEqualToString:@"fade"]){
+        self.alpha = 0;
+        [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+            self.alpha = 1;
+        } completion:^(BOOL finished) {
+            balloonState = TutorialBalloonStateDisplaying;
+        }];
+    }else if([self.animationType isEqualToString:@"none"]){
+        self.alpha = 1;
+        self.transform = CGAffineTransformIdentity;
+         balloonState = TutorialBalloonStateDisplaying;
+    }else{
+        //default: collapse
+        CGAffineTransform targetTransform;
+        self.alpha = 1;
+        TutorialDrawMode targetDrawMode = [self targetDrawMode];
+        switch (targetDrawMode) {
+            case TutorialDrawModeNoTargetView:
+                targetTransform = CGAffineTransformIdentity;
+                break;
+            case TutorialDrawModeAboveTargetView:
+                targetTransform = CGAffineTransformMakeTranslation(0, self.frame.size.height / 2);
+                break;
+            case TutorialDrawModeBelowTargetView:
+                targetTransform = CGAffineTransformMakeTranslation(0, -self.frame.size.height / 2);
+            default:
+                break;
+        }
+        targetTransform = CGAffineTransformScale(targetTransform, 0.1, 0.001);
+        self.transform = targetTransform;
+        [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+            self.transform = CGAffineTransformIdentity;
+        } completion:^(BOOL finished) {
+             balloonState = TutorialBalloonStateDisplaying;
+        }];
+    }
+}
+
+-(instancetype)hold{
+    self.alpha = 0;
+    balloonState = TutorialBalloonStateWaitingForSignal;
+    [NSObject cancelPreviousPerformRequestsWithTarget:self];
+    return self;
+}
+
 -(void)didMoveToSuperview{
     [super didMoveToSuperview];
+    balloonState = TutorialBalloonStateWaitingForSignal;
     if(![CPTutorial shouldDisplayTipWithName:self.tipName]){
         [self removeFromSuperview];
     }
@@ -311,6 +409,12 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 - (void)drawRect:(CGRect)rect {
     [super drawRect:rect];
+    if(balloonState != TutorialBalloonStateDisplaying &&
+       balloonState != TutorialBalloonStateAnimatingIn &&
+       balloonState != TutorialBalloonStateAnimatingOut){
+        self.alpha = 0;
+        return;
+    }
     UIColor *fillColor;
     TutorialDrawMode targetDrawMode = [self targetDrawMode];
     if(!self.fillColor){

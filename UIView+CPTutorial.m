@@ -10,6 +10,9 @@
 @implementation UIView (CPTutorial)
 
 -(CPTutorialBalloon*)displayBalloonTip:(NSString*)text{
+    if(![CPTutorial isRecordingValidTutorial]){
+        return nil;
+    }
     CPTutorialBalloon *balloon = [[CPTutorialBalloon alloc] initWithFrame:CGRectZero]; //we'll set up autolayout
     balloon.translatesAutoresizingMaskIntoConstraints = NO;
     balloon.text = text;
