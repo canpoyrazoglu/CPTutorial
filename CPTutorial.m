@@ -16,12 +16,40 @@ static CPTutorial *instance;
     BOOL isCurrentlyRecordingSteps;
     NSMutableArray *steps;
     NSString *currentTutorialName;
+    UIView *windowOverlayView;
+    NSMutableArray *tutorialsDisplayedThisSession;
+    NSMutableDictionary *tutorialNameToFirstBalloonDictionary;
+}
+
+-(instancetype)init{
+    self = [super init];
+    tutorialsDisplayedThisSession = [NSMutableArray array];
+    tutorialNameToFirstBalloonDictionary = [NSMutableDictionary dictionary];
+    return self;
 }
 
 +(void)initialize{
     [super initialize];
     instance = [[CPTutorial alloc] init];
     instance->isCurrentlyRecordingSteps = NO;
+}
+
++(UIView*)overlay{
+    if(!instance->windowOverlayView){
+        UIView *view = [[UIView alloc] initWithFrame:[UIApplication sharedApplication].keyWindow.frame];
+        view.backgroundColor = [UIColor clearColor];
+        view.opaque = NO;
+        view.userInteractionEnabled = NO;
+        NSLog(@"CPTUTORIAL: user interaction disabled.. bunu duzelt");
+        view.translatesAutoresizingMaskIntoConstraints = NO;
+        UIView *keyWindow = [UIApplication sharedApplication].keyWindow;
+        [keyWindow addSubview:view];
+        //add constraints
+        [keyWindow addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|-(0)-[view]-(0)-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(view)]];
+        [keyWindow addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(0)-[view]-(0)-|" options:0 metrics:nil views:NSDictionaryOfVariableBindings(view)]];
+        instance->windowOverlayView = view;
+    }
+    return instance->windowOverlayView;
 }
 
 +(void)processTutorialBalloon:(CPTutorialBalloon*)balloon{
@@ -46,11 +74,28 @@ static CPTutorial *instance;
 
 //determines if the current tutorial context is valid or invalid (e.g. displayed before)
 +(BOOL)isRecordingValidTutorial{
-    return [self shouldDisplayTipWithName:instance->currentTutorialName];
+    return [self shouldDisplayTutorialWithName:instance->currentTutorialName];
+}
+
++(BOOL)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{
+    if(![CPTutorial shouldDisplayTutorialWithName:tutorialName]){
+        return NO;
+    }else{
+        [CPTutorial beginStepsWithTutorialName:tutorialName];
+        actions();
+        [CPTutorial endSteps];
+        return YES;
+    }
+}
+
++(void)cancelTutorialWithName:(NSString*)tutorialName{
+    CPTutorialBalloon *initialBalloonOfTutorial = instance->tutorialNameToFirstBalloonDictionary[tutorialName];
+    [initialBalloonOfTutorial hold];
 }
 
 +(void)beginStepsWithTutorialName:(NSString*)tutorialName{
     NSAssert(tutorialName.length, @"Tutorial must have a valid name!");
+    [instance->tutorialsDisplayedThisSession addObject:tutorialName];
     instance->currentTutorialName = tutorialName;
     instance->isCurrentlyRecordingSteps = YES;
     instance->steps = [NSMutableArray array];
@@ -58,10 +103,6 @@ static CPTutorial *instance;
 
 +(void)endSteps{
     instance->isCurrentlyRecordingSteps = NO;
-    if(instance->steps.count){
-        CPTutorialBalloon *first = [instance->steps firstObject];
-        [first signal];
-    }
     if(instance->steps.count){
         CPTutorialBalloon *last = [instance->steps lastObject];
         CPTutorialAction handler = last.dismissHandler;
@@ -74,14 +115,25 @@ static CPTutorial *instance;
         };
         last.dismissHandler = handler;
     }
+    if(instance->steps.count){
+        CPTutorialBalloon *first = [instance->steps firstObject];
+        instance->tutorialNameToFirstBalloonDictionary[instance->currentTutorialName] = first;
+        [first signal];
+    }
 }
 
-+(BOOL)shouldDisplayTipWithName:(NSString*)tipName{
-    if(!tipName){
++(BOOL)shouldDisplayTutorialWithName:(NSString*)name{
+    if(!name){
         return YES;
     }
+    if(instance->isCurrentlyRecordingSteps){
+        return YES;
+    }
+    if([instance->tutorialsDisplayedThisSession containsObject:name]){
+        return NO;
+    }
     NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
-    NSString *targetKey = TIP_KEY(tipName);
+    NSString *targetKey = TIP_KEY(name);
     id val = [settings valueForKey:targetKey];
     if([val isEqualToString:@"done"]){
         return NO;

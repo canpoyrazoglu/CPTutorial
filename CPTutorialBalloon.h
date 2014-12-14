@@ -3,6 +3,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "CPTutorial.h"
 
 extern NSString *const CPTutorialSettingBorderColor;
 extern NSString *const CPTutorialSettingBorderWidth;
@@ -20,7 +21,16 @@ extern NSString *const CPTutorialSettingDisplaysTip;
 extern NSString *const CPTutorialSettingFontSize;
 extern NSString *const CPTutorialSettingFontName;
 
-typedef void (^CPTutorialAction)();
+//animation types
+
+/// No animation.
+extern NSString *const CPTutorialAnimationTypeNone;
+
+/// Fade animation.
+extern NSString *const CPTutorialAnimationTypeFade;
+
+///Collapsing animation.
+extern NSString *const CPTutorialAnimationTypeCollapse;
 
 typedef enum{
     TutorialBalloonStateWaitingForSignal,
@@ -28,13 +38,15 @@ typedef enum{
     TutorialBalloonStateAnimatingIn,
     TutorialBalloonStateDisplaying,
     TutorialBalloonStateAnimatingOut,
-    TutorialBalloonStateDismissed
+    TutorialBalloonStateDismissed,
+    
+    TutorialBalloonStateDesignMode
 }TutorialBalloonState;
 
 
 
 IB_DESIGNABLE
-@interface CPTutorialBalloon : UIView
+@interface CPTutorialBalloon : UIView<CPTutorialView>
 
 +(NSMutableDictionary*)defaultSettings;
 
@@ -47,7 +59,7 @@ IB_DESIGNABLE
 @property(nonatomic) IBOutlet UIView *targetView;
 
 //border color of the balloon
-@property IBInspectable UIColor *borderColor;
+@property(nonatomic) IBInspectable UIColor *borderColor;
 
 //border width of the balloon
 @property IBInspectable float borderWidth;
@@ -60,9 +72,6 @@ IB_DESIGNABLE
 
 //font name of the text. accepts both plain text "Helvetica Neue Light" and iOS-friendly "HelveticaNeue-Light" names. here is a nice list for you: http://iosfonts.com. custom fonts in your bundle should also work, though honestly I haven't tested it.
 @property(nonatomic) IBInspectable NSString *fontName;
-
-//fill color of the balloon
-@property(nonatomic) IBInspectable UIColor *fillColor;
 
 //corner radius of the balloon
 @property(nonatomic) IBInspectable float cornerRadius;
@@ -83,13 +92,24 @@ IB_DESIGNABLE
 //unique name of the tip
 @property IBInspectable float contentPadding;
 
+@property IBInspectable BOOL definesStyle;
+
 @property(copy) CPTutorialAction dismissHandler;
 @property BOOL shouldFireDismissHandlerEvenIfDisplayIsSkipped;
+@property BOOL isManagedExternally;
+@property(nonatomic) IBInspectable BOOL shouldResizeItselfAccordingToContents;
 
-@property(readonly) TutorialBalloonState balloonState;
+@property(nonatomic) TutorialBalloonState balloonState;
+@property(readonly, nonatomic) UILabel *textLabel;
 
 -(instancetype)hold;
 -(instancetype)signal;
+
+//convenience method for chaining
+-(CPTutorialBalloon*)delay:(float)delayInSeconds;
+
+//makes all balloons look like this
+-(void)makeStyleDefaultForAllBalloons;
 
 
 @end

@@ -26,6 +26,11 @@ NSString *const CPTutorialSettingDisplaysTip = @"displaysTip";
 NSString *const CPTutorialSettingFontSize = @"fontSize";
 NSString *const CPTutorialSettingFontName = @"fontName";
 
+//animation types
+NSString *const CPTutorialAnimationTypeNone = @"none";
+NSString *const CPTutorialAnimationTypeFade = @"fade";
+NSString *const CPTutorialAnimationTypeCollapse = @"collapse";
+
 
 typedef enum{
     TutorialDrawModeNoTargetView = 0,
@@ -42,13 +47,54 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     NSLayoutConstraint *textLabelTopConstraint;
     NSLayoutConstraint *textLabelBottomConstraint;
     BOOL dismissedWithoutBeingDisplayed;
+    BOOL isHostedInInterfaceBuilder;
     float targetAlpha;
-    TutorialBalloonState balloonState;
+    CGRect lastRect;
+    UIColor *fillColor;
+    
+    //drawing state related
+    TutorialDrawMode targetDrawMode;
+    CGSize tip;
+    CGPoint targetCenter;
 }
 
--(TutorialBalloonState)balloonState{
-    return balloonState;
+-(void)setBackgroundColor:(UIColor *)backgroundColor{
+    [super setBackgroundColor:[UIColor clearColor]];
+    fillColor = backgroundColor;
 }
+
+-(UIView *)tutorialView{
+    return self;
+}
+
+-(CGSize)tipSizeForDisplay{
+    if(CGSizeEqualToSize(self.tipSize, CGSizeZero)){
+        return CGSizeMake(18, 14);
+    }else{
+        return self.tipSize;
+    }
+}
+
+-(void)setBalloonState:(TutorialBalloonState)balloonState{
+    _balloonState = balloonState;
+    if(isHostedInInterfaceBuilder){
+        _balloonState = TutorialBalloonStateDesignMode;
+    }
+}
+
+-(CGRect)frameForAttachingToFrame:(CGRect)targetFrame{
+    //find below or not.
+    //NSLog(@"targetFrame %@", NSStringFromCGRect(targetFrame));
+    BOOL isOtherViewAtTheBottomHalfOfScreen = targetFrame.origin.y + (targetFrame.size.height / 2) >= (SCREEN_HEIGHT / 2);
+    CGRect rect = CGRectMake(20, isOtherViewAtTheBottomHalfOfScreen ? targetFrame.origin.y - 10 : targetFrame.origin.y + targetFrame.size.height + 10, SCREEN_WIDTH - 40, 60);
+    float requiredHeight = [textLabel sizeThatFits:CGSizeMake(rect.size.width, MAXFLOAT)].height + self.contentPadding * 2 + [self tipSizeForDisplay].height;
+    if(isOtherViewAtTheBottomHalfOfScreen){
+        rect.origin.y -= requiredHeight;
+    }
+    rect.size.height = requiredHeight;
+    return rect;
+}
+
 
 -(void)setCornerRadius:(float)cornerRadius{
     _cornerRadius = cornerRadius;
@@ -57,13 +103,9 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
--(void)setFillColor:(UIColor *)fillColor{
-    _fillColor = fillColor;
-    float alpha, white;
-    [fillColor getWhite:&white alpha:&alpha];
-    if(alpha < 1.0f){
-        self.opaque = NO;
-    }
+-(void)setBorderColor:(UIColor *)borderColor{
+    _borderColor = borderColor;
+    [self setNeedsDisplay];
 }
 
 +(void)initialize{
@@ -86,6 +128,24 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
        CPTutorialSettingFontName: @"HelveticaNeue",
        CPTutorialSettingFontSize: @(14)
        } mutableCopy];
+}
+
+-(void)makeStyleDefaultForAllBalloons{
+    _CPTutorialBalloonDefaults[CPTutorialSettingBorderColor] = self.borderColor;
+    _CPTutorialBalloonDefaults[CPTutorialSettingAnimationType] = self.animationType;
+    _CPTutorialBalloonDefaults[CPTutorialSettingBorderWidth] = @(self.borderWidth);
+    _CPTutorialBalloonDefaults[CPTutorialSettingCornerRadius] = @(self.cornerRadius);
+    _CPTutorialBalloonDefaults[CPTutorialSettingDismissOnTouch] = @(self.dismissOnTouch);
+    _CPTutorialBalloonDefaults[CPTutorialSettingDisplayDelay] = @(self.displayDelay);
+    _CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] = @(self.displaysTip);
+    _CPTutorialBalloonDefaults[CPTutorialSettingFillColor] = fillColor;
+    _CPTutorialBalloonDefaults[CPTutorialSettingFontName] = self.fontName;
+    _CPTutorialBalloonDefaults[CPTutorialSettingFontSize] = @(self.fontSize);
+    _CPTutorialBalloonDefaults[CPTutorialSettingManualTipPosition] = @(self.manualTipPosition);
+    _CPTutorialBalloonDefaults[CPTutorialSettingTextColor] = self.textColor;
+    _CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] = @(self.tipAboveBalloon);
+    _CPTutorialBalloonDefaults[CPTutorialSettingTipSize] = [NSValue valueWithCGSize:self.tipSize];
+    _CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] = @(self.contentPadding);
 }
 
 -(instancetype)init{
@@ -143,16 +203,28 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     return _CPTutorialBalloonDefaults;
 }
 
+-(void)attachedViewFrameDidChange:(CGRect)newFrame{
+    self.frame = [self frameForAttachingToFrame:newFrame];
+}
+
+-(void)setContentMode:(UIViewContentMode)contentMode{
+    [super setContentMode:UIViewContentModeRedraw];
+}
 
 -(void)initializeDefaultValues{
-    balloonState = TutorialBalloonStateWaitingForSignal;
+    if(self.balloonState == TutorialBalloonStateDesignMode){
+        self.balloonState = TutorialBalloonStateWaitingForSignal;
+    }
+    self.contentMode = UIViewContentModeRedraw;
     self.borderColor = _CPTutorialBalloonDefaults[CPTutorialSettingBorderColor];
     self.animationType = _CPTutorialBalloonDefaults[CPTutorialSettingAnimationType];
     self.borderWidth = [_CPTutorialBalloonDefaults[CPTutorialSettingBorderWidth] floatValue];
     self.cornerRadius = [_CPTutorialBalloonDefaults[CPTutorialSettingCornerRadius] floatValue];
     self.dismissOnTouch = [_CPTutorialBalloonDefaults[CPTutorialSettingDismissOnTouch] boolValue];
     self.displayDelay = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplayDelay] floatValue];
-    self.fillColor = _CPTutorialBalloonDefaults[CPTutorialSettingFillColor];
+    if(!self.backgroundColor){
+        self.backgroundColor = _CPTutorialBalloonDefaults[CPTutorialSettingFillColor];
+    }
     self.manualTipPosition = [_CPTutorialBalloonDefaults[CPTutorialSettingManualTipPosition] boolValue];
     self.tipAboveBalloon = [_CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] boolValue];
     self.tipSize = [_CPTutorialBalloonDefaults[CPTutorialSettingTipSize] CGSizeValue];
@@ -163,33 +235,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
     
     [CPTutorial processTutorialBalloon:self];
-}
-
--(void)addAndCenterItemUsingAutolayout:(UIView*)item{
-    NSLayoutConstraint *leftConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeading multiplier:1 constant:self.contentPadding];
-    NSLayoutConstraint *rightConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTrailing multiplier:1 constant:-(self.contentPadding)];
-    NSLayoutConstraint *topConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1 constant:self.contentPadding];
-    NSLayoutConstraint *bottomConstraint = [NSLayoutConstraint constraintWithItem:item attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1 constant:-(self.contentPadding)];
-    if(item == textLabel){
-        textLabelBottomConstraint = bottomConstraint;
-        textLabelTopConstraint = topConstraint;
-    }
-    [self addSubview:item];
-    [self addConstraints:@[leftConstraint, rightConstraint, topConstraint, bottomConstraint]];
-    //[item setContentCompressionResistancePriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
-}
-
--(NSLayoutConstraint*)heightConstraint{
-    for (NSLayoutConstraint *constraint in self.constraints) {
-        if(constraint.firstAttribute == NSLayoutAttributeHeight && constraint.secondItem == nil){
-            return constraint;
-        }
-    }
-    UIView *me = self;
-    NSLayoutConstraint *heightConstraint = [[NSLayoutConstraint constraintsWithVisualFormat:@"V:[me(100)]" options:0 metrics:nil views:NSDictionaryOfVariableBindings(me)] firstObject];
-    [self addConstraint:heightConstraint];
-    [self setNeedsLayout];
-    return heightConstraint;
 }
 
 -(void)setTextColor:(UIColor *)textColor{
@@ -204,22 +249,19 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         textLabel.translatesAutoresizingMaskIntoConstraints = NO;
         textLabel.numberOfLines = 0;
         textLabel.textColor = self.textColor;
-        textLabel.preferredMaxLayoutWidth = 300;
+        textLabel.preferredMaxLayoutWidth = 280;
         textLabel.font = [self resolvedFontWithName:self.fontName size:self.fontSize];
-        [self addAndCenterItemUsingAutolayout:textLabel];
+        [self addSubview:textLabel];
     }
-    
     textLabel.text = text;
-    //calculate new size
-    float targetWidth = self.frame.size.width;
-    if(!targetWidth){
-        targetWidth = SCREEN_WIDTH - 60;
-    }
-    [self heightConstraint].constant = [textLabel sizeThatFits:CGSizeMake(targetWidth, MAXFLOAT)].height + 60;
 }
 
 -(NSString *)text{
     return textLabel.text;
+}
+
+-(UILabel *)textLabel{
+    return textLabel;
 }
 
 -(void)setTargetView:(UIView *)targetView{
@@ -262,16 +304,20 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
+-(CPTutorialBalloon*)delay:(float)delayInSeconds{
+    self.displayDelay = delayInSeconds;
+    return self;
+}
+
 -(void)setDisplayDelay:(float)displayDelay{
     _displayDelay = displayDelay;
-    if(displayDelay && balloonState == TutorialBalloonStateWaitingForDelay){
+    if(displayDelay && self.balloonState == TutorialBalloonStateWaitingForDelay){
         [self hold];
         [self signal]; //[re]start timer
     }
 }
 
 -(void)dismiss{
-    TutorialDrawMode targetDrawMode = [self targetDrawMode];
     dismissedWithoutBeingDisplayed = YES;
     if(self.tipName){
         [CPTutorial markTipCompletedWithTipName:self.tipName];
@@ -310,6 +356,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(void)prepareForInterfaceBuilder{
     self.displayDelay = 0;
+    isHostedInInterfaceBuilder = YES;
+    self.balloonState = TutorialBalloonStateDesignMode;
 }
 
 -(void)awakeFromNib{
@@ -317,21 +365,28 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     if(!self.borderColor){
         self.borderColor = [UIColor grayColor];
     }
-    self.backgroundColor = [UIColor clearColor];
     self.layer.masksToBounds = NO;
 }
 
 -(instancetype)signal{
-    balloonState = TutorialBalloonStateWaitingForDelay;
-    [self performSelector:@selector(present) withObject:nil afterDelay:self.displayDelay];
-    return self;
+    if(self.balloonState == TutorialBalloonStateDesignMode){
+        [self present];
+        return self;
+    }else{
+        self.balloonState = TutorialBalloonStateWaitingForDelay;
+        [self performSelector:@selector(present) withObject:nil afterDelay:self.displayDelay];
+        return self;
+    }
 }
 
 -(void)present{
-    if(balloonState != TutorialBalloonStateWaitingForDelay && balloonState != TutorialBalloonStateWaitingForSignal){
+    if(self.balloonState != TutorialBalloonStateWaitingForDelay && self.balloonState != TutorialBalloonStateWaitingForSignal && self.balloonState != TutorialBalloonStateDesignMode){
         return;
     }
-    balloonState = TutorialBalloonStateAnimatingIn;
+    if(self.definesStyle){
+        [self makeStyleDefaultForAllBalloons];
+    }
+    self.balloonState = TutorialBalloonStateAnimatingIn;
     self.hidden = NO;
     self.alpha = 0;
     [self setNeedsDisplay];
@@ -340,17 +395,16 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
             self.alpha = 1;
         } completion:^(BOOL finished) {
-            balloonState = TutorialBalloonStateDisplaying;
+            self.balloonState = TutorialBalloonStateDisplaying;
         }];
     }else if([self.animationType isEqualToString:@"none"]){
         self.alpha = 1;
         self.transform = CGAffineTransformIdentity;
-         balloonState = TutorialBalloonStateDisplaying;
+        self.balloonState = TutorialBalloonStateDisplaying;
     }else{
         //default: collapse
         CGAffineTransform targetTransform;
         self.alpha = 1;
-        TutorialDrawMode targetDrawMode = [self targetDrawMode];
         switch (targetDrawMode) {
             case TutorialDrawModeNoTargetView:
                 targetTransform = CGAffineTransformIdentity;
@@ -368,35 +422,46 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         [UIView animateWithDuration:0.12 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
             self.transform = CGAffineTransformIdentity;
         } completion:^(BOOL finished) {
-             balloonState = TutorialBalloonStateDisplaying;
+            self.balloonState = TutorialBalloonStateDisplaying;
         }];
     }
 }
 
 -(instancetype)hold{
+    if(self.balloonState == TutorialBalloonStateDesignMode){
+        return self;
+    }
     self.alpha = 0;
-    balloonState = TutorialBalloonStateWaitingForSignal;
+    self.balloonState = TutorialBalloonStateWaitingForSignal;
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
     return self;
 }
 
+
+
 -(void)didMoveToSuperview{
     [super didMoveToSuperview];
-    balloonState = TutorialBalloonStateWaitingForSignal;
-    if(![CPTutorial shouldDisplayTipWithName:self.tipName]){
+    if(self.balloonState == TutorialBalloonStateDesignMode){
+        return;
+    }
+    if(self.isManagedExternally){
+        self.balloonState = TutorialBalloonStateWaitingForSignal;
+    }else{
+        [self signal];
+    }
+    if(![CPTutorial shouldDisplayTutorialWithName:self.tipName]){
         [self removeFromSuperview];
     }
 }
 
 -(void)setTipName:(NSString *)tipName{
     _tipName = tipName;
-    if(self.superview && ![CPTutorial shouldDisplayTipWithName:tipName]){
+    if(self.superview && ![CPTutorial shouldDisplayTutorialWithName:tipName]){
         [self removeFromSuperview];
     }
 }
 
 -(TutorialDrawMode)targetDrawMode{
-    TutorialDrawMode targetDrawMode = drawMode;
     if(self.manualTipPosition){
         if(self.tipAboveBalloon){
             targetDrawMode = TutorialDrawModeBelowTargetView;
@@ -407,56 +472,77 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     return targetDrawMode;
 }
 
-- (void)drawRect:(CGRect)rect {
-    [super drawRect:rect];
-    if(balloonState != TutorialBalloonStateDisplaying &&
-       balloonState != TutorialBalloonStateAnimatingIn &&
-       balloonState != TutorialBalloonStateAnimatingOut){
-        self.alpha = 0;
-        return;
+-(void)setShouldResizeItselfAccordingToContents:(BOOL)shouldResizeItselfAccordingToContents{
+    _shouldResizeItselfAccordingToContents = shouldResizeItselfAccordingToContents;
+    if(shouldResizeItselfAccordingToContents){
+        [self sizeToFit];
     }
-    UIColor *fillColor;
-    TutorialDrawMode targetDrawMode = [self targetDrawMode];
-    if(!self.fillColor){
-        fillColor = [UIColor clearColor];
+}
+
+-(CGSize)intrinsicContentSize{
+    if(self.shouldResizeItselfAccordingToContents){
+        return [self sizeThatFits:CGSizeMake(self.frame.size.width, MAXFLOAT)];
     }else{
-        fillColor = self.fillColor;
+        return [super intrinsicContentSize];
     }
-    CGSize tip;
-    if(CGSizeEqualToSize(self.tipSize, CGSizeZero)){
-        tip = CGSizeMake(18, 14);
-    }else{
-        tip = self.tipSize;
-    }
-    
+}
+
+-(void)recalculateViews{
+    targetDrawMode = [self targetDrawMode];
+    tip = [self tipSizeForDisplay];
+    CGRect targetTextLabelFrame;
     switch (targetDrawMode) {
         case TutorialDrawModeAboveTargetView:
-            textLabelTopConstraint.constant = self.contentPadding;
-            textLabelBottomConstraint.constant = -(self.contentPadding + tip.height);
+            //textLabelTopConstraint.constant = self.contentPadding;
+            //textLabelBottomConstraint.constant = -(self.contentPadding + tip.height);
+            targetTextLabelFrame = CGRectMake(self.contentPadding, self.contentPadding, self.frame.size.width - self.contentPadding * 2, self.frame.size.height - self.contentPadding * 2 - tip.height);
             break;
         case TutorialDrawModeBelowTargetView:
-            textLabelTopConstraint.constant = self.contentPadding + tip.height;
-            textLabelBottomConstraint.constant = -(self.contentPadding);
+            //textLabelTopConstraint.constant = self.contentPadding + tip.height;
+            //textLabelBottomConstraint.constant = -(self.contentPadding);
+            targetTextLabelFrame = CGRectMake(self.contentPadding, self.contentPadding + tip.height, self.frame.size.width - self.contentPadding * 2, self.frame.size.height - self.contentPadding * 2 - tip.height);
             break;
         case TutorialDrawModeNoTargetView:
-            textLabelTopConstraint.constant = self.contentPadding;
-            textLabelBottomConstraint.constant = -(self.contentPadding);
+            //textLabelTopConstraint.constant = self.contentPadding;
+            //textLabelBottomConstraint.constant = -(self.contentPadding);
+            targetTextLabelFrame = CGRectMake(self.contentPadding, self.contentPadding, self.frame.size.width - self.contentPadding * 2, self.frame.size.height - self.contentPadding * 2);
             break;
         default:
             break;
     }
+    NSLog(@"target text label frame: %@", NSStringFromCGRect(targetTextLabelFrame));
+    textLabel.frame = targetTextLabelFrame;
+    textLabel.preferredMaxLayoutWidth = targetTextLabelFrame.size.width;
     //calculate the center of the target view, if any
-    CGPoint targetCenter;
     if(self.manualTipPosition){
-        targetCenter = CGPointMake(rect.origin.x + rect.size.width / 2, 0);
+        targetCenter = CGPointMake(self.frame.origin.x + self.frame.size.width / 2, 0);
     }
-    if(self.targetView){
-        targetCenter = CGPointMake(self.targetView.frame.origin.x
-                                   + self.targetView.frame.size.width / 2,
-                                   self.targetView.frame.origin.y
-                                   + self.targetView.frame.size.height / 2
+    if(self.isManagedExternally && self.targetView){
+        CGRect targetViewFrameInOurSuperview = [self.targetView.superview convertRect:self.targetView.frame toView:self];
+        targetCenter = CGPointMake(targetViewFrameInOurSuperview.origin.x
+                                   + targetViewFrameInOurSuperview.size.width / 2,
+                                   targetViewFrameInOurSuperview.origin.y
+                                   + targetViewFrameInOurSuperview.size.height / 2
                                    );
     }
+}
+
+- (void)drawRect:(CGRect)rect {
+    lastRect = rect;
+    [self recalculateViews];
+    [super drawRect:rect];
+    if(self.balloonState != TutorialBalloonStateDisplaying &&
+       self.balloonState != TutorialBalloonStateAnimatingIn &&
+       self.balloonState != TutorialBalloonStateAnimatingOut &&
+       self.balloonState != TutorialBalloonStateDesignMode){
+        self.alpha = 0;
+        return;
+    }
+    
+    if(!fillColor){
+        fillColor = [UIColor clearColor];
+    }
+    
     if(targetDrawMode == TutorialDrawModeAboveTargetView){
         rect = CGRectMake(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height - tip.height);
     }else if(targetDrawMode == TutorialDrawModeBelowTargetView){
@@ -485,7 +571,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     if(targetDrawMode == TutorialDrawModeAboveTargetView && self.displaysTip){
         //we should add balloon tip
         //find the X location of the parent view on the screen
-        float targetXLocation = targetCenter.x;
+        float targetXLocation = targetCenter.x;// - self.frame.origin.x;
         //check if within correct bounds, if not, clamp it
         if(targetXLocation < rect.origin.x + self.cornerRadius + tip.width / 2){
             targetXLocation = rect.origin.x + self.cornerRadius + tip.width / 2;
