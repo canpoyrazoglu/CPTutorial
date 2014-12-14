@@ -42,7 +42,7 @@ typedef void (^CPTutorialAction)();
 +(void)endSteps;
 
 /**
- Displays a series of tutorial balloons sequentally.
+ Displays a series of tutorial balloons sequentially.
  
  Usage:
  Use the following code in the view controller's @c viewDidAppear: method:

@@ -66,17 +66,6 @@
     }
 }
 
--(void)willMoveToSuperview:(UIView *)newSuperview{
-    if(!newSuperview){
-        UIView *view = self.superview;
-        while (view) {
-            //[view removeObserver:self forKeyPath:@"frame"];
-            //[view removeObserver:self forKeyPath:@"superview"];
-            view = view.superview;
-        }
-    }
-}
-
 -(void)didMoveToWindow{
     NSLog(@"did move to window: %@", self.window);
     [self.delegate setHidden:!self.window];

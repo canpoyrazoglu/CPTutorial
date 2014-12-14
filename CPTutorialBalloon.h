@@ -50,53 +50,74 @@ IB_DESIGNABLE
 
 +(NSMutableDictionary*)defaultSettings;
 
-//text to display. can be nil.
+/// Text to display. Can be @c nil.
 @property(nonatomic) IBInspectable NSString *text;
 
+/// Name of the tip. It should be a unique string within your app, to identify and display your tip only once.
 @property(nonatomic) IBInspectable NSString *tipName;
 
-//view that this tip is attached to set 
+/// View that this tip is attached to. When displayed, the balloon and tip will be "attached" to this view.
 @property(nonatomic) IBOutlet UIView *targetView;
 
-//border color of the balloon
+/// Border color of the balloon.
 @property(nonatomic) IBInspectable UIColor *borderColor;
 
-//border width of the balloon
+/// Border width of the balloon.
 @property IBInspectable float borderWidth;
 
-//text color of the balloon
+/// Text color of the balloon.
 @property(nonatomic) IBInspectable UIColor *textColor;
 
-//font size of the text
+/// Font size of the text.
 @property(nonatomic) IBInspectable float fontSize;
 
-//font name of the text. accepts both plain text "Helvetica Neue Light" and iOS-friendly "HelveticaNeue-Light" names. here is a nice list for you: http://iosfonts.com. custom fonts in your bundle should also work, though honestly I haven't tested it.
+/** Font name of the text. Accepts both plain text "Helvetica Neue Light" and iOS-friendly "HelveticaNeue-Light" names. Custom fonts in your bundle should also work, though honestly I haven't tested it. 
+ @see Full list of iOS fonts: http://iosfonts.com.
+ */
 @property(nonatomic) IBInspectable NSString *fontName;
 
-//corner radius of the balloon
+/// Corner radius of the balloon.
 @property(nonatomic) IBInspectable float cornerRadius;
 
-//whether the balloon displays tip or not.
+/// Whether the balloon displays its tip or not.
 @property(nonatomic) IBInspectable BOOL displaysTip;
 
-//size of the tip from balloon to target view
+/// Size of the tip from balloon to target view, if displayed.
 @property IBInspectable CGSize tipSize;
 
+/// Whether tip will be manually positioned by developer (hey, it's you!) or automatically on layout.
 @property IBInspectable BOOL manualTipPosition;
+
+/// Set to YES for displaying the tip above the balloon. Works only if @c manualTipPosition is set to YES.
 @property IBInspectable BOOL tipAboveBalloon;
+
+/// Sets whether the balloon dismisses itself or not, when touched.
 @property IBInspectable BOOL dismissOnTouch;
+
+/** Animation type of appearing and dismissing of the balloon.
+ @see @c CPTutorialAnimationType constants.
+ */
 @property IBInspectable NSString *animationType; //currently supported: fade, collapse, none. default: collapse
 
-//delay before displaying the balloon, in seconds
+/// Delay before displaying the balloon, in seconds.
 @property(nonatomic) IBInspectable float displayDelay;
-//unique name of the tip
+
+/// Content padding inside the tip, in points.
 @property IBInspectable float contentPadding;
 
+/**
+ Set YES to make the appearance of this balloon default for all balloons this session.
+ @warning Setting this property to YES on multiple balloons on the same view simultaneously has undefined behavior.
+ */
 @property IBInspectable BOOL definesStyle;
 
+/// Handler block to be fired when balloon is dismissed. Can be nil.
 @property(copy) CPTutorialAction dismissHandler;
+
 @property BOOL shouldFireDismissHandlerEvenIfDisplayIsSkipped;
 @property BOOL isManagedExternally;
+
+/// Set YES to enable resizing the balloon according to it's contents (e.g. number of lines of text etc). Interface Builder-designed balloons normally wouldn't need this property, unless their text is dynamic.
 @property(nonatomic) IBInspectable BOOL shouldResizeItselfAccordingToContents;
 
 @property(nonatomic) TutorialBalloonState balloonState;
@@ -105,10 +126,12 @@ IB_DESIGNABLE
 -(instancetype)hold;
 -(instancetype)signal;
 
-//convenience method for chaining
+/// Delays the display of this balloon, and returns itself, enabling method chaining.
 -(CPTutorialBalloon*)delay:(float)delayInSeconds;
 
-//makes all balloons look like this
+/** Makes all balloons look like this
+ @seealso definesStyle
+ */
 -(void)makeStyleDefaultForAllBalloons;
 
 

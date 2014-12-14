@@ -16,6 +16,7 @@
     }
     CPTutorialBalloon *balloon = [[CPTutorialBalloon alloc] initWithFrame:self.frame];
     balloon.isManagedExternally = YES;
+    balloon.shouldResizeItselfAccordingToContents = YES;
     balloon.text = text;
 
     float midpointY = self.frame.origin.y + self.frame.size.height / 2;
@@ -27,17 +28,13 @@
     balloon.targetView = self;
     balloon.tipAboveBalloon = below;
 
-    
-    UIView *superviewToAddBalloon = [[[UIApplication sharedApplication] delegate] window];//[UIApplication sharedApplication].keyWindow;
+    UIView *superviewToAddBalloon = [[[UIApplication sharedApplication] delegate] window];
     [superviewToAddBalloon addSubview:balloon];
     //now, a hacky way to "observe" frame changes:
     self.autoresizesSubviews = YES;
     CPTutorialInvisibleProxyView *proxyView = [CPTutorialInvisibleProxyView proxyView];
     proxyView.delegate = balloon;
-   // [self addObserver:proxyView forKeyPath:@"frame" options:NSKeyValueObservingOptionNew context:nil];
     [self addSubview:proxyView];
-    
-    
     return balloon;
 }
 

@@ -389,7 +389,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.balloonState = TutorialBalloonStateAnimatingIn;
     self.hidden = NO;
     self.alpha = 0;
-    [self setNeedsDisplay];
     if([self.animationType isEqualToString:@"fade"]){
         self.alpha = 0;
         [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
@@ -425,6 +424,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
             self.balloonState = TutorialBalloonStateDisplaying;
         }];
     }
+    [self setNeedsDisplay];
 }
 
 -(instancetype)hold{
@@ -481,7 +481,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(CGSize)intrinsicContentSize{
     if(self.shouldResizeItselfAccordingToContents){
-        return [self sizeThatFits:CGSizeMake(self.frame.size.width, MAXFLOAT)];
+        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(SCREEN_WIDTH - 40 - self.contentPadding * 2, MAXFLOAT)].height;
+        return CGSizeMake(SCREEN_WIDTH - 40, requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
     }else{
         return [super intrinsicContentSize];
     }
@@ -490,6 +491,11 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 -(void)recalculateViews{
     targetDrawMode = [self targetDrawMode];
     tip = [self tipSizeForDisplay];
+    if(self.shouldResizeItselfAccordingToContents){
+        CGRect currentFrame = self.frame;
+        currentFrame.size = [self intrinsicContentSize];
+        self.frame = currentFrame;
+    }
     CGRect targetTextLabelFrame;
     switch (targetDrawMode) {
         case TutorialDrawModeAboveTargetView:
