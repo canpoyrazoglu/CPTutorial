@@ -4,12 +4,12 @@
 //  Created by Can Poyrazoğlu on 27.10.14.
 //
 
-#ifndef SCREEN_WIDTH
-#define SCREEN_WIDTH ([UIApplication sharedApplication].keyWindow.frame.size.width)
+#ifndef CPTUTORIAL_SCREEN_WIDTH
+#define CPTUTORIAL_SCREEN_WIDTH ([UIApplication sharedApplication].keyWindow.frame.size.width)
 #endif
 
-#ifndef SCREEN_HEIGHT
-#define SCREEN_HEIGHT ([UIApplication sharedApplication].keyWindow.frame.size.height)
+#ifndef CPTUTORIAL_SCREEN_HEIGHT
+#define CPTUTORIAL_SCREEN_HEIGHT ([UIApplication sharedApplication].keyWindow.frame.size.height)
 #endif
 
 @protocol CPTutorialView<NSObject>
@@ -28,15 +28,14 @@ typedef void (^CPTutorialAction)();
 #import "CPTutorialBalloon.h"
 #import "UIView+CPTutorial.h"
 
-@class CPTutorialBalloon;
-
-
-
 @interface CPTutorial : NSObject
+
+@property(readonly) NSString *name;
+@property(readonly) CPTutorialBalloon *firstBalloon;
+@property(readonly) CPTutorialBalloon *currentBalloon;
 
 +(BOOL)shouldDisplayTutorialWithName:(NSString*)name;
 +(void)markTipCompletedWithTipName:(NSString*)tipName;
-+(UILabel*)label;
 
 +(void)beginStepsWithTutorialName:(NSString*)tutorialName;
 +(void)endSteps;
@@ -63,11 +62,17 @@ typedef void (^CPTutorialAction)();
  Name of the tutorial to cancel.
  @warning This method will not function if the tutorial has already started displaying the first balloon.
  */
-+(void)cancelTutorialWithName:(NSString*)tutorialName;
++(instancetype)cancel:(NSString*)tutorialName;
 
-/// Internal method. DO NOT call this method.
-+(void)processTutorialBalloon:(CPTutorialBalloon*)balloon;
-+(BOOL)isRecordingValidTutorial;
-+(UIView*)overlay;
++(instancetype)pause:(NSString*)tutorialName;
++(instancetype)resume:(NSString*)tutorialName;
+
+-(instancetype)pause;
+-(instancetype)resume;
+-(instancetype)cancel;
+
++(CPTutorial*)currentTutorial;
+-(void)addBalloon:(CPTutorialBalloon*)balloon;
+
 
 @end

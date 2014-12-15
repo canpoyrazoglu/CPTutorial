@@ -7,8 +7,6 @@
 #import <UIKit/UIKit.h>
 #import "CPTutorial.h"
 
-@class CPTutorialBalloon;
-
 @interface UIView (CPTutorial)
 
 /**

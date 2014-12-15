@@ -25,9 +25,6 @@ NSString *const CPTutorialSettingTextColor = @"textColor";
 NSString *const CPTutorialSettingDisplaysTip = @"displaysTip";
 NSString *const CPTutorialSettingFontSize = @"fontSize";
 NSString *const CPTutorialSettingFontName = @"fontName";
-NSString *const CPTutorialSettingShadowEnabled = @"shadowEnabled";
-NSString *const CPTutorialSettingShadowColor = @"shadowColor";
-NSString *const CPTutorialSettingShadowBlurRadius = @"shadowBlurRadius";
 
 //animation types
 NSString *const CPTutorialAnimationTypeNone = @"none";
@@ -59,9 +56,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     TutorialDrawMode targetDrawMode;
     CGSize tip;
     CGPoint targetCenter;
-    
-    //for extra effects
-    UIView *shadowView;
 }
 
 -(void)setBackgroundColor:(UIColor *)backgroundColor{
@@ -71,42 +65,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(UIView *)tutorialView{
     return self;
-}
-
--(void)applyShadowProperties{
-    if(self.shadowEnabled && !shadowView){
-        shadowView = [[UIView alloc] initWithFrame:self.frame];
-        shadowView.backgroundColor = [UIColor clearColor];
-        shadowView.layer.masksToBounds = NO;
-        [self addSubview:shadowView];
-        [self sendSubviewToBack:shadowView];
-    }
-    if(!self.shadowEnabled && shadowView){
-        [shadowView removeFromSuperview];
-        shadowView = nil;
-    }
-    if(self.shadowEnabled){
-        //set shadow properties
-        shadowView.layer.shadowColor = self.shadowColor.CGColor;
-        shadowView.layer.shadowOpacity = 1;
-        shadowView.layer.shadowOffset = CGSizeZero;
-        shadowView.layer.shadowRadius = self.shadowBlurRadius;
-    }
-}
-
--(void)setShadowBlurRadius:(float)shadowBlurRadius{
-    _shadowBlurRadius = shadowBlurRadius;
-    [self applyShadowProperties];
-}
-
--(void)setShadowColor:(UIColor *)shadowColor{
-    _shadowColor = shadowColor;
-    [self applyShadowProperties];
-}
-
--(void)setShadowEnabled:(BOOL)shadowEnabled{
-    _shadowEnabled = shadowEnabled;
-    [self applyShadowProperties];
 }
 
 -(CGSize)tipSizeForDisplay{
@@ -127,8 +85,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 -(CGRect)frameForAttachingToFrame:(CGRect)targetFrame{
     //find below or not.
     //NSLog(@"targetFrame %@", NSStringFromCGRect(targetFrame));
-    BOOL isOtherViewAtTheBottomHalfOfScreen = targetFrame.origin.y + (targetFrame.size.height / 2) >= (SCREEN_HEIGHT / 2);
-    CGRect rect = CGRectMake(20, isOtherViewAtTheBottomHalfOfScreen ? targetFrame.origin.y - 10 : targetFrame.origin.y + targetFrame.size.height + 10, SCREEN_WIDTH - 40, 60);
+    BOOL isOtherViewAtTheBottomHalfOfScreen = targetFrame.origin.y + (targetFrame.size.height / 2) >= (CPTUTORIAL_SCREEN_HEIGHT / 2);
+    CGRect rect = CGRectMake(20, isOtherViewAtTheBottomHalfOfScreen ? targetFrame.origin.y - 10 : targetFrame.origin.y + targetFrame.size.height + 10, CPTUTORIAL_SCREEN_WIDTH - 40, 60);
     float requiredHeight = [textLabel sizeThatFits:CGSizeMake(rect.size.width, MAXFLOAT)].height + self.contentPadding * 2 + [self tipSizeForDisplay].height;
     if(isOtherViewAtTheBottomHalfOfScreen){
         rect.origin.y -= requiredHeight;
@@ -164,15 +122,11 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
        CPTutorialSettingManualTipPosition: @(NO),
        CPTutorialSettingTipAboveBalloon: @(NO),
        CPTutorialSettingTipSize: [NSValue valueWithCGSize:CGSizeMake(18, 14)],
-       CPTutorialSettingContentPadding: @(12.0f),
+       CPTutorialSettingContentPadding: @(10.0f),
        CPTutorialSettingTextColor: [UIColor blackColor],
        CPTutorialSettingDisplaysTip: @(YES),
        CPTutorialSettingFontName: @"HelveticaNeue",
-       CPTutorialSettingFontSize: @(14),
-       CPTutorialSettingShadowBlurRadius: @(8.f),
-       CPTutorialSettingShadowColor: [UIColor colorWithWhite:0 alpha:0.04],
-       CPTutorialSettingShadowEnabled: @(YES)
-       
+       CPTutorialSettingFontSize: @(14)
        } mutableCopy];
 }
 
@@ -192,9 +146,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     _CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] = @(self.tipAboveBalloon);
     _CPTutorialBalloonDefaults[CPTutorialSettingTipSize] = [NSValue valueWithCGSize:self.tipSize];
     _CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] = @(self.contentPadding);
-    _CPTutorialBalloonDefaults[CPTutorialSettingShadowBlurRadius] = @(self.shadowBlurRadius);
-    _CPTutorialBalloonDefaults[CPTutorialSettingShadowColor] = self.shadowColor;
-    _CPTutorialBalloonDefaults[CPTutorialSettingShadowEnabled] = @(self.shadowEnabled);
 }
 
 -(instancetype)init{
@@ -282,8 +233,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.displaysTip = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] boolValue];
     self.fontName = _CPTutorialBalloonDefaults[CPTutorialSettingFontName];
     self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
-    
-    [CPTutorial processTutorialBalloon:self];
 }
 
 -(void)setTextColor:(UIColor *)textColor{
@@ -293,7 +242,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(void)setText:(NSString *)text{
     if(!textLabel){
-        textLabel = [[UILabel alloc] initWithFrame:self.frame];
+        textLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         textLabel.textAlignment = NSTextAlignmentCenter;
         textLabel.translatesAutoresizingMaskIntoConstraints = NO;
         textLabel.numberOfLines = 0;
@@ -351,6 +300,9 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
             self.dismissHandler();
         }
     }
+    if(!self.shouldHoldAfterBeingDismissed){
+        [self.tutorial resume];
+    }
 }
 
 -(CPTutorialBalloon*)delay:(float)delayInSeconds{
@@ -366,7 +318,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
--(void)dismiss{
+-(instancetype)dismiss{
     dismissedWithoutBeingDisplayed = YES;
     if(self.tipName){
         [CPTutorial markTipCompletedWithTipName:self.tipName];
@@ -401,12 +353,18 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
             [self removeFromSuperview];
         }];
     }
+    return self;
 }
 
 -(void)prepareForInterfaceBuilder{
     self.displayDelay = 0;
     isHostedInInterfaceBuilder = YES;
     self.balloonState = TutorialBalloonStateDesignMode;
+}
+
+-(void)setTutorial:(CPTutorial *)tutorial{
+    _tutorial = tutorial;
+    [_tutorial addBalloon:self];
 }
 
 -(void)awakeFromNib{
@@ -530,8 +488,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(CGSize)intrinsicContentSize{
     if(self.shouldResizeItselfAccordingToContents){
-        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(SCREEN_WIDTH - 40 - self.contentPadding * 2, MAXFLOAT)].height;
-        return CGSizeMake(SCREEN_WIDTH - 40, requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
+        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - 40 - self.contentPadding * 2, MAXFLOAT)].height;
+        return CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - 40, requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
     }else{
         return [super intrinsicContentSize];
     }
@@ -566,7 +524,6 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
             break;
     }
     textLabel.frame = targetTextLabelFrame;
-    shadowView.frame = targetTextLabelFrame;
     textLabel.preferredMaxLayoutWidth = targetTextLabelFrame.size.width;
     //calculate the center of the target view, if any
     if(self.manualTipPosition){
@@ -582,7 +539,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
--(void)drawRect:(CGRect)rect {
+- (void)drawRect:(CGRect)rect {
     lastRect = rect;
     [self recalculateViews];
     [super drawRect:rect];

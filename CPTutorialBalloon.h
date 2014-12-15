@@ -5,6 +5,8 @@
 #import <UIKit/UIKit.h>
 #import "CPTutorial.h"
 
+@class CPTutorial;
+
 extern NSString *const CPTutorialSettingBorderColor;
 extern NSString *const CPTutorialSettingBorderWidth;
 extern NSString *const CPTutorialSettingCornerRadius;
@@ -20,9 +22,6 @@ extern NSString *const CPTutorialSettingTextColor;
 extern NSString *const CPTutorialSettingDisplaysTip;
 extern NSString *const CPTutorialSettingFontSize;
 extern NSString *const CPTutorialSettingFontName;
-extern NSString *const CPTutorialSettingShadowEnabled;
-extern NSString *const CPTutorialSettingShadowColor;
-extern NSString *const CPTutorialSettingShadowBlurRadius;
 
 //animation types
 
@@ -82,15 +81,6 @@ IB_DESIGNABLE
 /// Corner radius of the balloon.
 @property(nonatomic) IBInspectable float cornerRadius;
 
-/// Whether the balloon displays a shadow underneath or not.
-@property(nonatomic) IBInspectable BOOL shadowEnabled;
-
-/// Color of the shadow, if exists.
-@property(nonatomic) IBInspectable UIColor *shadowColor;
-
-/// Blur radius of the shadow, if it exists
-@property(nonatomic) IBInspectable float shadowBlurRadius;
-
 /// Whether the balloon displays its tip or not.
 @property(nonatomic) IBInspectable BOOL displaysTip;
 
@@ -138,6 +128,9 @@ IB_DESIGNABLE
 -(instancetype)hold;
 -(instancetype)signal;
 
+/// Dismisses the balloon.
+-(instancetype)dismiss;
+
 /// Delays the display of this balloon, and returns itself, enabling method chaining.
 -(CPTutorialBalloon*)delay:(float)delayInSeconds;
 
@@ -146,5 +139,8 @@ IB_DESIGNABLE
  */
 -(void)makeStyleDefaultForAllBalloons;
 
+@property(nonatomic) CPTutorial *tutorial;
+@property CPTutorialBalloon *nextBalloon;
+@property BOOL shouldHoldAfterBeingDismissed;
 
 @end

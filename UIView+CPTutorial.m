@@ -4,20 +4,23 @@
 //  Created by Can Poyrazoğlu on 23.11.14.
 //
 
-#import "UIView+CPTutorial.h"
 #import "CPTutorial.h"
+#import "UIView+CPTutorial.h"
 #import "CPTutorialInvisibleProxyView.h"
 
 @implementation UIView (CPTutorial)
 
 -(CPTutorialBalloon*)displayBalloonTip:(NSString*)text{
+    /*
     if(![CPTutorial isRecordingValidTutorial]){
         return nil;
     }
+     */
     CPTutorialBalloon *balloon = [[CPTutorialBalloon alloc] initWithFrame:self.frame];
     balloon.isManagedExternally = YES;
     balloon.shouldResizeItselfAccordingToContents = YES;
     balloon.text = text;
+    balloon.tutorial = [CPTutorial currentTutorial];
 
     float midpointY = self.frame.origin.y + self.frame.size.height / 2;
     BOOL below = YES;

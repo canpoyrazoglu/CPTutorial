@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "CPTutorial.h"
 
+/// @warning Used for internal implementation of CPTutorial. Do not use this class.
 @interface CPTutorialInvisibleProxyView : UIView
 
 +(instancetype)proxyView;
