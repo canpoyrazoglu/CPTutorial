@@ -25,6 +25,7 @@ NSString *const CPTutorialSettingTextColor = @"textColor";
 NSString *const CPTutorialSettingDisplaysTip = @"displaysTip";
 NSString *const CPTutorialSettingFontSize = @"fontSize";
 NSString *const CPTutorialSettingFontName = @"fontName";
+NSString *const CPTutorialSettingHorizontalMargin = @"horizontalMargin";
 
 //animation types
 NSString *const CPTutorialAnimationTypeNone = @"none";
@@ -86,7 +87,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     //find below or not.
     //NSLog(@"targetFrame %@", NSStringFromCGRect(targetFrame));
     BOOL isOtherViewAtTheBottomHalfOfScreen = targetFrame.origin.y + (targetFrame.size.height / 2) >= (CPTUTORIAL_SCREEN_HEIGHT / 2);
-    CGRect rect = CGRectMake(20, isOtherViewAtTheBottomHalfOfScreen ? targetFrame.origin.y - 10 : targetFrame.origin.y + targetFrame.size.height + 10, CPTUTORIAL_SCREEN_WIDTH - 40, 60);
+    CGRect rect = CGRectMake(self.horizontalMargin, isOtherViewAtTheBottomHalfOfScreen ? targetFrame.origin.y - 10 : targetFrame.origin.y + targetFrame.size.height + 10, CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2), 60);
     float requiredHeight = [textLabel sizeThatFits:CGSizeMake(rect.size.width, MAXFLOAT)].height + self.contentPadding * 2 + [self tipSizeForDisplay].height;
     if(isOtherViewAtTheBottomHalfOfScreen){
         rect.origin.y -= requiredHeight;
@@ -126,7 +127,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
        CPTutorialSettingTextColor: [UIColor blackColor],
        CPTutorialSettingDisplaysTip: @(YES),
        CPTutorialSettingFontName: @"HelveticaNeue",
-       CPTutorialSettingFontSize: @(14)
+       CPTutorialSettingFontSize: @(14),
+       CPTutorialSettingHorizontalMargin: @(20)
        } mutableCopy];
 }
 
@@ -146,6 +148,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     _CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] = @(self.tipAboveBalloon);
     _CPTutorialBalloonDefaults[CPTutorialSettingTipSize] = [NSValue valueWithCGSize:self.tipSize];
     _CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] = @(self.contentPadding);
+    _CPTutorialBalloonDefaults[CPTutorialSettingHorizontalMargin] = @(self.horizontalMargin);
 }
 
 -(instancetype)init{
@@ -233,6 +236,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     self.displaysTip = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] boolValue];
     self.fontName = _CPTutorialBalloonDefaults[CPTutorialSettingFontName];
     self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
+    self.horizontalMargin = [_CPTutorialBalloonDefaults[CPTutorialSettingHorizontalMargin] floatValue];
 }
 
 -(void)setTextColor:(UIColor *)textColor{
@@ -285,6 +289,11 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     textLabel.font = [self resolvedFontWithName:self.fontName size:fontSize];
 }
 
+-(void)setHorizontalMargin:(float)horizontalMargin{
+    _horizontalMargin = horizontalMargin;
+    [self recalculateViews];
+}
+
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event{
     [super touchesBegan:touches withEvent:event];
@@ -301,6 +310,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         }
     }
     if(!self.shouldHoldAfterBeingDismissed){
+        [self.tutorial step];
         [self.tutorial resume];
     }
 }
@@ -488,8 +498,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(CGSize)intrinsicContentSize{
     if(self.shouldResizeItselfAccordingToContents){
-        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - 40 - self.contentPadding * 2, MAXFLOAT)].height;
-        return CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - 40, requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
+        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2) - self.contentPadding * 2, MAXFLOAT)].height;
+        return CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2), requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
     }else{
         return [super intrinsicContentSize];
     }

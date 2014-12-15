@@ -22,6 +22,7 @@ extern NSString *const CPTutorialSettingTextColor;
 extern NSString *const CPTutorialSettingDisplaysTip;
 extern NSString *const CPTutorialSettingFontSize;
 extern NSString *const CPTutorialSettingFontName;
+extern NSString *const CPTutorialSettingHorizontalMargin;
 
 //animation types
 
@@ -106,6 +107,9 @@ IB_DESIGNABLE
 
 /// Content padding inside the tip, in points.
 @property IBInspectable float contentPadding;
+
+/// Horizontal margin size of the baloon, in points.
+@property(nonatomic) IBInspectable float horizontalMargin;
 
 /**
  Set YES to make the appearance of this balloon default for all balloons this session.

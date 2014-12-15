@@ -17,6 +17,7 @@ static NSMutableArray *tutorialsDisplayedThisSession;
 @implementation CPTutorial{
     UIView *windowOverlayView;
     CPTutorialBalloon *lastAddedBalloon;
+    CPTutorialAction completionHandler;
 }
 
 -(instancetype)pause{
@@ -28,6 +29,11 @@ static NSMutableArray *tutorialsDisplayedThisSession;
 
 -(instancetype)resume{
     [self.currentBalloon signal];
+    return self;
+}
+
+-(instancetype)step{
+    _currentBalloon = self.currentBalloon.nextBalloon;
     return self;
 }
 
@@ -71,15 +77,33 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return [CPTutorial shouldDisplayTutorialWithName:self.name];
 }
 
-+(BOOL)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{
++(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions completion:(CPTutorialCompletion)completion{
     if(![CPTutorial shouldDisplayTutorialWithName:tutorialName]){
-        return NO;
+        if(completion){
+            completion(NO);
+        }
+        return nil;
     }else{
-        [CPTutorial beginStepsWithTutorialName:tutorialName];
+        [[CPTutorial beginStepsWithTutorialName:tutorialName] completeWith:^{
+            if(completion){
+                completion(YES);
+            }
+        }];
         actions();
-        [CPTutorial endSteps];
-        return YES;
+        return [CPTutorial endSteps];
     }
+}
+
++(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{
+    return [self displayWithName:tutorialName actions:actions completion:nil];
+}
+
+-(instancetype)completeWith:(CPTutorialAction)completion{
+    if(!completion){
+        completion = CPTUTORIAL_NOOP;
+    }
+    completionHandler = completion;
+    return self;
 }
 
 +(instancetype)pause:(NSString*)tutorialName{
@@ -94,11 +118,12 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return [[CPTutorial tutorialNamed:tutorialName] cancel];
 }
 
-+(void)beginStepsWithTutorialName:(NSString*)tutorialName{
++(CPTutorial*)beginStepsWithTutorialName:(NSString*)tutorialName{
     NSAssert(tutorialName.length, @"Tutorial must have a valid name!");
     CPTutorial *tut = [CPTutorial tutorialNamed:tutorialName];
     [tutorialsDisplayedThisSession addObject:tutorialName];
     current = tut;
+    return tut;
 }
 
 -(void)addBalloon:(CPTutorialBalloon*)balloon{
@@ -112,11 +137,12 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     lastAddedBalloon = balloon;
 }
 
-+(void)endSteps{
++(CPTutorial*)endSteps{
     CPTutorial *tut = current;
     current = nil;
     CPTutorialBalloon *firstBalloon = tut.firstBalloon;
     [firstBalloon signal];
+    return tut;
 }
 
 +(BOOL)shouldDisplayTutorialWithName:(NSString*)name{

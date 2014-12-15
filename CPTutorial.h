@@ -23,6 +23,7 @@
 @end
 
 typedef void (^CPTutorialAction)();
+typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"
@@ -37,8 +38,8 @@ typedef void (^CPTutorialAction)();
 +(BOOL)shouldDisplayTutorialWithName:(NSString*)name;
 +(void)markTipCompletedWithTipName:(NSString*)tipName;
 
-+(void)beginStepsWithTutorialName:(NSString*)tutorialName;
-+(void)endSteps;
++(CPTutorial*)beginStepsWithTutorialName:(NSString*)tutorialName;
++(CPTutorial*)endSteps;
 
 /**
  Displays a series of tutorial balloons sequentially.
@@ -53,9 +54,11 @@ typedef void (^CPTutorialAction)();
  @endcode
  @param tutorialName
  Name of the tutorial. This can be anything as long as it's unique in your app. It will determine whether this tutorial is going to be displayed ever again or not.
- @return YES if the tutorial is displaying, NO if it won't be displayed (in case it has been displayed before in a previous session).
+ @param actions
+ Tutorial block to execute. Multiple calls to display methods are managed by the framework and they will display one after another properly after dismissal.
+ @return The tutorial if the tutorial is displaying, or nil if it won't be displayed (in case it has been displayed before in a previous session).
  */
-+(BOOL)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions;
++(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions;
 
 /** Prevents the currently waiting (delayed) tutorial from being displayed.
  @param tutorialName
@@ -70,9 +73,11 @@ typedef void (^CPTutorialAction)();
 -(instancetype)pause;
 -(instancetype)resume;
 -(instancetype)cancel;
+-(instancetype)step;
 
 +(CPTutorial*)currentTutorial;
 -(void)addBalloon:(CPTutorialBalloon*)balloon;
+-(instancetype)completeWith:(CPTutorialAction)completion;
 
 
 @end
