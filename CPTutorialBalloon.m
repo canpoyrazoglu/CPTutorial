@@ -25,6 +25,9 @@ NSString *const CPTutorialSettingTextColor = @"textColor";
 NSString *const CPTutorialSettingDisplaysTip = @"displaysTip";
 NSString *const CPTutorialSettingFontSize = @"fontSize";
 NSString *const CPTutorialSettingFontName = @"fontName";
+NSString *const CPTutorialSettingShadowEnabled = @"shadowEnabled";
+NSString *const CPTutorialSettingShadowColor = @"shadowColor";
+NSString *const CPTutorialSettingShadowBlurRadius = @"shadowBlurRadius";
 
 //animation types
 NSString *const CPTutorialAnimationTypeNone = @"none";
@@ -56,6 +59,9 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     TutorialDrawMode targetDrawMode;
     CGSize tip;
     CGPoint targetCenter;
+    
+    //for extra effects
+    UIView *shadowView;
 }
 
 -(void)setBackgroundColor:(UIColor *)backgroundColor{
@@ -65,6 +71,42 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(UIView *)tutorialView{
     return self;
+}
+
+-(void)applyShadowProperties{
+    if(self.shadowEnabled && !shadowView){
+        shadowView = [[UIView alloc] initWithFrame:self.frame];
+        shadowView.backgroundColor = [UIColor clearColor];
+        shadowView.layer.masksToBounds = NO;
+        [self addSubview:shadowView];
+        [self sendSubviewToBack:shadowView];
+    }
+    if(!self.shadowEnabled && shadowView){
+        [shadowView removeFromSuperview];
+        shadowView = nil;
+    }
+    if(self.shadowEnabled){
+        //set shadow properties
+        shadowView.layer.shadowColor = self.shadowColor.CGColor;
+        shadowView.layer.shadowOpacity = 1;
+        shadowView.layer.shadowOffset = CGSizeZero;
+        shadowView.layer.shadowRadius = self.shadowBlurRadius;
+    }
+}
+
+-(void)setShadowBlurRadius:(float)shadowBlurRadius{
+    _shadowBlurRadius = shadowBlurRadius;
+    [self applyShadowProperties];
+}
+
+-(void)setShadowColor:(UIColor *)shadowColor{
+    _shadowColor = shadowColor;
+    [self applyShadowProperties];
+}
+
+-(void)setShadowEnabled:(BOOL)shadowEnabled{
+    _shadowEnabled = shadowEnabled;
+    [self applyShadowProperties];
 }
 
 -(CGSize)tipSizeForDisplay{
@@ -122,11 +164,15 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
        CPTutorialSettingManualTipPosition: @(NO),
        CPTutorialSettingTipAboveBalloon: @(NO),
        CPTutorialSettingTipSize: [NSValue valueWithCGSize:CGSizeMake(18, 14)],
-       CPTutorialSettingContentPadding: @(10.0f),
+       CPTutorialSettingContentPadding: @(12.0f),
        CPTutorialSettingTextColor: [UIColor blackColor],
        CPTutorialSettingDisplaysTip: @(YES),
        CPTutorialSettingFontName: @"HelveticaNeue",
-       CPTutorialSettingFontSize: @(14)
+       CPTutorialSettingFontSize: @(14),
+       CPTutorialSettingShadowBlurRadius: @(8.f),
+       CPTutorialSettingShadowColor: [UIColor colorWithWhite:0 alpha:0.04],
+       CPTutorialSettingShadowEnabled: @(YES)
+       
        } mutableCopy];
 }
 
@@ -146,6 +192,9 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     _CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] = @(self.tipAboveBalloon);
     _CPTutorialBalloonDefaults[CPTutorialSettingTipSize] = [NSValue valueWithCGSize:self.tipSize];
     _CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] = @(self.contentPadding);
+    _CPTutorialBalloonDefaults[CPTutorialSettingShadowBlurRadius] = @(self.shadowBlurRadius);
+    _CPTutorialBalloonDefaults[CPTutorialSettingShadowColor] = self.shadowColor;
+    _CPTutorialBalloonDefaults[CPTutorialSettingShadowEnabled] = @(self.shadowEnabled);
 }
 
 -(instancetype)init{
@@ -244,7 +293,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 
 -(void)setText:(NSString *)text{
     if(!textLabel){
-        textLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        textLabel = [[UILabel alloc] initWithFrame:self.frame];
         textLabel.textAlignment = NSTextAlignmentCenter;
         textLabel.translatesAutoresizingMaskIntoConstraints = NO;
         textLabel.numberOfLines = 0;
@@ -516,8 +565,8 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         default:
             break;
     }
-    NSLog(@"target text label frame: %@", NSStringFromCGRect(targetTextLabelFrame));
     textLabel.frame = targetTextLabelFrame;
+    shadowView.frame = targetTextLabelFrame;
     textLabel.preferredMaxLayoutWidth = targetTextLabelFrame.size.width;
     //calculate the center of the target view, if any
     if(self.manualTipPosition){
@@ -533,7 +582,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
-- (void)drawRect:(CGRect)rect {
+-(void)drawRect:(CGRect)rect {
     lastRect = rect;
     [self recalculateViews];
     [super drawRect:rect];
