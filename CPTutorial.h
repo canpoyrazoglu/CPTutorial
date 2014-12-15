@@ -24,6 +24,7 @@
 
 typedef void (^CPTutorialAction)();
 typedef void (^CPTutorialCompletion)(BOOL didDisplay);
+@class CPTutorialBalloon;
 
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"
