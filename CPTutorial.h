@@ -12,6 +12,10 @@
 #define CPTUTORIAL_SCREEN_HEIGHT ([UIApplication sharedApplication].keyWindow.frame.size.height)
 #endif
 
+#ifndef CPTUTORIAL_WINDOWFRAME
+#define CPTUTORIAL_WINDOWFRAME ([UIApplication sharedApplication].keyWindow.frame)
+#endif
+
 @protocol CPTutorialView<NSObject>
 
 @required
@@ -24,7 +28,6 @@
 
 typedef void (^CPTutorialAction)();
 typedef void (^CPTutorialCompletion)(BOOL didDisplay);
-@class CPTutorialBalloon;
 
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"
@@ -37,7 +40,7 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 @property(readonly) CPTutorialBalloon *currentBalloon;
 
 +(BOOL)shouldDisplayTutorialWithName:(NSString*)name;
-+(void)markTipCompletedWithTipName:(NSString*)tipName;
++(void)markTutorialAsCompleted:(NSString*)tipName;
 
 +(CPTutorial*)beginStepsWithTutorialName:(NSString*)tutorialName;
 +(CPTutorial*)endSteps;
@@ -74,11 +77,18 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 -(instancetype)pause;
 -(instancetype)resume;
 -(instancetype)cancel;
+-(instancetype)refresh;
 -(instancetype)step;
+-(instancetype)resumeIfOn:(id)target;
+
+-(instancetype)insert:(CPTutorialAction)actions;
+
+
 
 +(CPTutorial*)currentTutorial;
 -(void)addBalloon:(CPTutorialBalloon*)balloon;
 -(instancetype)completeWith:(CPTutorialAction)completion;
++(UIView*)placeholderAt:(CGRect)frame;
 
 
 @end

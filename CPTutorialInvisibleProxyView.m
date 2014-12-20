@@ -6,7 +6,9 @@
 
 #import "CPTutorialInvisibleProxyView.h"
 
-@implementation CPTutorialInvisibleProxyView
+@implementation CPTutorialInvisibleProxyView{
+    CGRect lastFrame;
+}
 
 
 -(void)drawRect:(CGRect)rect{
@@ -17,13 +19,19 @@
     }
 }
 
+
 -(void)setOpaque:(BOOL)opaque{
     [super setOpaque:NO];
 }
 
+-(instancetype)initWithFrame:(CGRect)frame{
+    self = [super initWithFrame:frame];
+    [super setOpaque:NO];
+    return self;
+}
+
 +(instancetype)proxyView{
     CPTutorialInvisibleProxyView *view = [[CPTutorialInvisibleProxyView alloc] initWithFrame:CGRectMake(0, 0, 10, 10)];
-    view.opaque = NO;
     view.translatesAutoresizingMaskIntoConstraints = NO;
     view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     view.contentMode = UIViewContentModeRedraw;
@@ -55,11 +63,13 @@
 }
 
 -(void)setFrame:(CGRect)frame{
-    CGRect globalFrame = [self.superview.superview convertRect:self.superview.frame toView:[self.delegate tutorialView]];
-    if([self.delegate respondsToSelector:@selector(attachedViewFrameDidChange:)]){
-        [self.delegate attachedViewFrameDidChange:globalFrame];
+    [super setFrame:frame];
+    if(self.superview){
+        CGRect globalFrame = [self.superview.superview convertRect:self.superview.frame toView:[self.delegate tutorialView]];
+        if([self.delegate respondsToSelector:@selector(attachedViewFrameDidChange:)]){
+            [self.delegate attachedViewFrameDidChange:globalFrame];
+        }
     }
-    
 }
 
 @end

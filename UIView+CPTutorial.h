@@ -19,6 +19,6 @@
  @warning This method sets the calling view's @c autoresizesSubviews property to YES in order to observe frame changes to the view.
  */
 -(CPTutorialBalloon*)displayBalloonTip:(NSString*)text;
--(CPTutorialBalloon*)displayBalloonTip:(NSString*)text onceWithIdentifier:(NSString*)tipName;
+-(CPTutorial*)displayBalloonTip:(NSString*)text onceWithIdentifier:(NSString*)tipName;
 
 @end

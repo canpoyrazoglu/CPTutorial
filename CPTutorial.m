@@ -5,6 +5,7 @@
 //
 
 #import "CPTutorial.h"
+#import "CPTutorialInvisibleProxyView.h"
 
 #define CPTUTORIAL_NAME_FORMAT (@"_CPTutorial_%@")
 #define CPTUTORIAL_KEY(x) ([NSString stringWithFormat:CPTUTORIAL_NAME_FORMAT, x])
@@ -24,22 +25,45 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     self.currentBalloon.shouldHoldAfterBeingDismissed = YES;
     [self.currentBalloon dismiss];
     _currentBalloon = self.currentBalloon.nextBalloon;
+    [self checkCompletion];
     return self;
 }
 
 -(instancetype)resume{
+    self.currentBalloon.shouldHoldAfterBeingDismissed = NO;
     [self.currentBalloon signal];
+    [self refresh];
+    return self;
+}
+
+-(void)checkCompletion{
+    if(!self.currentBalloon){
+        [CPTutorial markTutorialAsCompleted:self.name];
+        if(completionHandler){
+            completionHandler();
+        }
+    }
+}
+
+-(instancetype)insert:(CPTutorialAction)actions{
+    CPTutorial *before = current;
+    current = self;
+    actions();
+    current = before;
     return self;
 }
 
 -(instancetype)step{
     _currentBalloon = self.currentBalloon.nextBalloon;
+    [self checkCompletion];
+    [self resume];
     return self;
 }
 
 -(instancetype)cancel{
     [self.currentBalloon dismiss];
     _currentBalloon = nil;
+    [self checkCompletion];
     return self;
 }
 
@@ -92,6 +116,11 @@ static NSMutableArray *tutorialsDisplayedThisSession;
         actions();
         return [CPTutorial endSteps];
     }
+}
+
++(UIView*)placeholderAt:(CGRect)frame{
+    CPTutorialInvisibleProxyView *proxy = [[CPTutorialInvisibleProxyView alloc] initWithFrame:frame];
+    return proxy;
 }
 
 +(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{
@@ -162,7 +191,20 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     }
 }
 
-+(void)markTipCompletedWithTipName:(NSString*)tipName{
+-(instancetype)resumeIfOn:(id)target{
+    if(self.currentBalloon.targetView == target){
+        [self.currentBalloon dismiss];
+    }
+    return self;
+}
+
+-(instancetype)refresh{
+    CGRect rect = [self.currentBalloon.targetView.superview convertRect:self.currentBalloon.targetView.frame toView:nil];
+    [self.currentBalloon attachedViewFrameDidChange:rect];
+    return self;
+}
+
++(void)markTutorialAsCompleted:(NSString*)tipName{
     NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
     NSString *targetKey = CPTUTORIAL_KEY(tipName);
     [settings setValue:@"done" forKey:targetKey];

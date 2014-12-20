@@ -16,20 +16,17 @@
         return nil;
     }
      */
+    if([self isKindOfClass:[CPTutorialInvisibleProxyView class]]){
+        if(!self.superview){
+            [[[[UIApplication sharedApplication] delegate] window] addSubview:self];
+        }
+    }
     CPTutorialBalloon *balloon = [[CPTutorialBalloon alloc] initWithFrame:self.frame];
     balloon.isManagedExternally = YES;
     balloon.shouldResizeItselfAccordingToContents = YES;
     balloon.text = text;
     balloon.tutorial = [CPTutorial currentTutorial];
-
-    float midpointY = self.frame.origin.y + self.frame.size.height / 2;
-    BOOL below = YES;
-    if(midpointY > self.superview.frame.size.height / 2){
-        below = NO;
-    }
-    balloon.manualTipPosition = YES;
     balloon.targetView = self;
-    balloon.tipAboveBalloon = below;
 
     UIView *superviewToAddBalloon = [[[UIApplication sharedApplication] delegate] window];
     [superviewToAddBalloon addSubview:balloon];
@@ -41,14 +38,10 @@
     return balloon;
 }
 
--(CPTutorialBalloon*)displayBalloonTip:(NSString*)text onceWithIdentifier:(NSString*)tipName{
-    if([CPTutorial shouldDisplayTutorialWithName:tipName]){
-        CPTutorialBalloon *balloon = [self displayBalloonTip:text];
-        balloon.tipName = tipName;
-        return balloon;
-    }else{
-        return nil;
-    }
+-(CPTutorial*)displayBalloonTip:(NSString*)text onceWithIdentifier:(NSString*)tipName{
+    return [CPTutorial displayWithName:tipName actions:^{
+        [self displayBalloonTip:text];
+    }];
 }
 
 @end

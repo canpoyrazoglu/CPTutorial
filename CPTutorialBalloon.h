@@ -23,6 +23,10 @@ extern NSString *const CPTutorialSettingDisplaysTip;
 extern NSString *const CPTutorialSettingFontSize;
 extern NSString *const CPTutorialSettingFontName;
 extern NSString *const CPTutorialSettingHorizontalMargin;
+extern NSString *const CPTutorialSettingShadowEnabled;
+extern NSString *const CPTutorialSettingShadowColor;
+extern NSString *const CPTutorialSettingShadowBlurRadius;
+
 
 //animation types
 
@@ -68,6 +72,18 @@ IB_DESIGNABLE
 /// Border width of the balloon.
 @property IBInspectable float borderWidth;
 
+/// Whether the balloon displays a shadow underneath or not.
+@property(nonatomic) IBInspectable BOOL shadowEnabled;
+
+/// Color of the shadow, if exists.
+@property(nonatomic) IBInspectable UIColor *shadowColor;
+
+/// Blur radius of the shadow, if it exists
+@property(nonatomic) IBInspectable float shadowBlurRadius;
+
+/// Whether the balloon displays its tip or not.
+@property(nonatomic) IBInspectable BOOL displaysTip;
+
 /// Text color of the balloon.
 @property(nonatomic) IBInspectable UIColor *textColor;
 
@@ -81,9 +97,6 @@ IB_DESIGNABLE
 
 /// Corner radius of the balloon.
 @property(nonatomic) IBInspectable float cornerRadius;
-
-/// Whether the balloon displays its tip or not.
-@property(nonatomic) IBInspectable BOOL displaysTip;
 
 /// Size of the tip from balloon to target view, if displayed.
 @property IBInspectable CGSize tipSize;
@@ -134,6 +147,9 @@ IB_DESIGNABLE
 
 /// Dismisses the balloon.
 -(instancetype)dismiss;
+
+/// Convenience method for setting dismiss handler. Returns the balloon itself for method chaining.
+-(instancetype)whenDismissed:(CPTutorialAction)handler;
 
 /// Delays the display of this balloon, and returns itself, enabling method chaining.
 -(CPTutorialBalloon*)delay:(float)delayInSeconds;
