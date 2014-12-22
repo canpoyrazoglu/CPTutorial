@@ -4,6 +4,7 @@
 
 #import "CPTutorialBalloon.h"
 #import "CPTutorial.h"
+#import "CPTutorialInvisibleProxyView.h"
 #import "CPTutorialShadowView.h"
 
 #define ADD_NEXT_LINE (CGPathAddLineToPoint(path, nil, next.x, next.y))
@@ -392,6 +393,9 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     if(!self.shouldHoldAfterBeingDismissed){
         [self.tutorial step];
     }
+    if([self.targetView isKindOfClass:[CPTutorialInvisibleProxyView class]]){
+        [self.targetView removeFromSuperview];
+    }
 }
 
 -(CPTutorialBalloon*)delay:(float)delayInSeconds{
@@ -768,7 +772,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     if(targetDrawMode == TutorialDrawModeBelowTargetView && self.displaysTip){
         //we should add balloon tip
         //find the X location of the parent view on the screen
-        float targetXLocation = targetCenter.x;
+        float targetXLocation = targetCenter.x - self.frame.origin.x;
         //check if within correct bounds, if not, clamp it
         if(targetXLocation < rect.origin.x + self.cornerRadius + tip.width / 2){
             targetXLocation = rect.origin.x + self.cornerRadius + tip.width / 2;

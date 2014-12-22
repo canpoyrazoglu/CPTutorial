@@ -49,6 +49,7 @@
 
 -(void)didMoveToSuperview{
     CGRect globalFrame = [self.superview.superview convertRect:self.superview.frame toView:[[self.delegate tutorialView] superview]];
+    [self.superview sendSubviewToBack:self];
     if([self.delegate respondsToSelector:@selector(attachedViewFrameDidChange:)]){
         [self.delegate attachedViewFrameDidChange:globalFrame];
     }

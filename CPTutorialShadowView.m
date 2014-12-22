@@ -1,6 +1,5 @@
 //
 //  CPTutorialShadowView.m
-//  QuickUp
 //
 //  Created by Can Poyrazoğlu on 19.12.14.
 //  Copyright (c) 2014 QuickUp, B.V. All rights reserved.
