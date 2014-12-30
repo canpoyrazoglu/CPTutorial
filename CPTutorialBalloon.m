@@ -6,6 +6,7 @@
 #import "CPTutorial.h"
 #import "CPTutorialInvisibleProxyView.h"
 #import "CPTutorialShadowView.h"
+#import "CPTutorialTargetTouchIndicatorView.h"
 
 #define ADD_NEXT_LINE (CGPathAddLineToPoint(path, nil, next.x, next.y))
 #define ADD_NEXT_ARC (CGPathAddArcToPoint(path, nil, control.x, control.y, next.x, next.y, self.cornerRadius))
@@ -67,7 +68,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     
     //extra effects
     CPTutorialShadowView *shadowView;
-
+    
 }
 
 -(void)setBackgroundColor:(UIColor *)backgroundColor{
@@ -117,7 +118,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
     if(self.shadowEnabled){
         [self.superview insertSubview:shadowView belowSubview:self];
-       
+        
     }
 }
 
@@ -194,7 +195,7 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     _CPTutorialBalloonDefaults[CPTutorialSettingShadowBlurRadius] = @(self.shadowBlurRadius);
     _CPTutorialBalloonDefaults[CPTutorialSettingShadowColor] = self.shadowColor;
     _CPTutorialBalloonDefaults[CPTutorialSettingShadowEnabled] = @(self.shadowEnabled);
-
+    
 }
 
 -(instancetype)init{
@@ -258,6 +259,10 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 }
 
 -(void)applyOffscreenFilter{
+    if(self.shouldDisplayEvenOutsideTheViewBounds){
+        isHiddenDueToBeingOffscreen = NO;
+        return;
+    }
     CGRect targetContainerFrame = CPTUTORIAL_WINDOWFRAME;
     targetContainerFrame.origin.y = 40;
     targetContainerFrame.size.height -= targetContainerFrame.origin.y * 2;
@@ -297,27 +302,65 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
     dismissedWithoutBeingDisplayed = YES;
     self.contentMode = UIViewContentModeRedraw;
-    self.borderColor = _CPTutorialBalloonDefaults[CPTutorialSettingBorderColor];
-    self.animationType = _CPTutorialBalloonDefaults[CPTutorialSettingAnimationType];
-    self.borderWidth = [_CPTutorialBalloonDefaults[CPTutorialSettingBorderWidth] floatValue];
-    self.cornerRadius = [_CPTutorialBalloonDefaults[CPTutorialSettingCornerRadius] floatValue];
-    self.dismissOnTouch = [_CPTutorialBalloonDefaults[CPTutorialSettingDismissOnTouch] boolValue];
-    self.displayDelay = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplayDelay] floatValue];
+    [self applyStyle:_CPTutorialBalloonDefaults];
+}
+
+-(void)setStyle:(NSDictionary *)style{
+    [self applyStyle:style];
+}
+
+-(instancetype)withStyle:(NSDictionary *)style{
+    self.style = style;
+    return self;
+}
+
+-(void)applyStyle:(CPTutorialBalloonStyle*)style{
+    self.borderColor = style[CPTutorialSettingBorderColor];
+    self.animationType = style[CPTutorialSettingAnimationType];
+    self.borderWidth = [style[CPTutorialSettingBorderWidth] floatValue];
+    self.cornerRadius = [style[CPTutorialSettingCornerRadius] floatValue];
+    self.dismissOnTouch = [style[CPTutorialSettingDismissOnTouch] boolValue];
+    self.displayDelay = [style[CPTutorialSettingDisplayDelay] floatValue];
     if(!self.backgroundColor){
-        self.backgroundColor = _CPTutorialBalloonDefaults[CPTutorialSettingFillColor];
+        self.backgroundColor = style[CPTutorialSettingFillColor];
     }
-    self.manualTipPosition = [_CPTutorialBalloonDefaults[CPTutorialSettingManualTipPosition] boolValue];
-    self.tipAboveBalloon = [_CPTutorialBalloonDefaults[CPTutorialSettingTipAboveBalloon] boolValue];
-    self.tipSize = [_CPTutorialBalloonDefaults[CPTutorialSettingTipSize] CGSizeValue];
-    self.contentPadding = [_CPTutorialBalloonDefaults[CPTutorialSettingContentPadding] floatValue];
-    self.textColor = _CPTutorialBalloonDefaults[CPTutorialSettingTextColor];
-    self.displaysTip = [_CPTutorialBalloonDefaults[CPTutorialSettingDisplaysTip] boolValue];
-    self.fontName = _CPTutorialBalloonDefaults[CPTutorialSettingFontName];
-    self.fontSize = [_CPTutorialBalloonDefaults[CPTutorialSettingFontSize] floatValue];
-    self.horizontalMargin = [_CPTutorialBalloonDefaults[CPTutorialSettingHorizontalMargin] floatValue];
+    self.manualTipPosition = [style[CPTutorialSettingManualTipPosition] boolValue];
+    self.tipAboveBalloon = [style[CPTutorialSettingTipAboveBalloon] boolValue];
+    self.tipSize = [style[CPTutorialSettingTipSize] CGSizeValue];
+    self.contentPadding = [style[CPTutorialSettingContentPadding] floatValue];
+    self.textColor = style[CPTutorialSettingTextColor];
+    self.displaysTip = [style[CPTutorialSettingDisplaysTip] boolValue];
+    self.fontName = style[CPTutorialSettingFontName];
+    self.fontSize = [style[CPTutorialSettingFontSize] floatValue];
+    self.horizontalMargin = [style[CPTutorialSettingHorizontalMargin] floatValue];
     self.shadowBlurRadius = [_CPTutorialBalloonDefaults[CPTutorialSettingShadowBlurRadius] floatValue];
-    self.shadowColor = _CPTutorialBalloonDefaults[CPTutorialSettingShadowColor];
-    self.shadowEnabled = [_CPTutorialBalloonDefaults[CPTutorialSettingShadowEnabled] boolValue];
+    self.shadowColor = style[CPTutorialSettingShadowColor];
+    self.shadowEnabled = [style[CPTutorialSettingShadowEnabled] boolValue];
+}
+
+-(CPTutorialBalloonStyle*)style{
+    return
+    @{
+      CPTutorialSettingAnimationType: self.animationType,
+      CPTutorialSettingBorderColor: self.borderColor,
+      CPTutorialSettingBorderWidth: @(self.borderWidth),
+      CPTutorialSettingContentPadding: @(self.contentPadding),
+      CPTutorialSettingCornerRadius: @(self.cornerRadius),
+      CPTutorialSettingDismissOnTouch: @(self.dismissOnTouch),
+      CPTutorialSettingDisplayDelay: @(self.displayDelay),
+      CPTutorialSettingDisplaysTip: @(self.displaysTip),
+      CPTutorialSettingFillColor: self.backgroundColor,
+      CPTutorialSettingFontName: self.fontName,
+      CPTutorialSettingFontSize: @(self.fontSize),
+      CPTutorialSettingHorizontalMargin: @(self.horizontalMargin),
+      CPTutorialSettingManualTipPosition: @(self.manualTipPosition),
+      CPTutorialSettingShadowBlurRadius: @(self.shadowBlurRadius),
+      CPTutorialSettingShadowColor: self.shadowColor,
+      CPTutorialSettingShadowEnabled: @(self.shadowEnabled),
+      CPTutorialSettingTextColor: self.textColor,
+      CPTutorialSettingTipAboveBalloon: @(self.tipAboveBalloon),
+      CPTutorialSettingTipSize: [NSValue valueWithCGSize:self.tipSize]
+      };
 }
 
 -(void)setTextColor:(UIColor *)textColor{
@@ -395,6 +438,11 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
     if([self.targetView isKindOfClass:[CPTutorialInvisibleProxyView class]]){
         [self.targetView removeFromSuperview];
+    }
+    if([self.targetView isKindOfClass:[CPTutorialTargetTouchIndicatorView class]]){
+        CPTutorialTargetTouchIndicatorView *targetView = (CPTutorialTargetTouchIndicatorView*)self.targetView;
+        [targetView endAnimating];
+        [targetView removeFromSuperview];
     }
 }
 
@@ -512,13 +560,18 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
 }
 
 -(void)present{
-    if(self.balloonState != TutorialBalloonStateWaitingForDelay && self.balloonState != TutorialBalloonStateWaitingForSignal && self.balloonState != TutorialBalloonStateDesignMode){
+    if(self.balloonState != TutorialBalloonStateWaitingForDelay &&
+       self.balloonState != TutorialBalloonStateWaitingForSignal &&
+       self.balloonState != TutorialBalloonStateDesignMode){
         return;
     }
     if(self.definesStyle){
         [self makeStyleDefaultForAllBalloons];
     }
     [self applyOffscreenFilter];
+    if(self.blockToExecuteBeforeDisplaying){
+        self.blockToExecuteBeforeDisplaying();
+    }
     self.balloonState = TutorialBalloonStateAnimatingIn;
     self.hidden = NO;
     self.alpha = 0;
@@ -574,14 +627,19 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         }];
         /*
          
-        [UIView animateWithDuration:1.12 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+         [UIView animateWithDuration:1.12 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
          
-        } completion:^(BOOL finished) {
+         } completion:^(BOOL finished) {
          
-        }];
+         }];
          */
     }
     [self setNeedsDisplay];
+}
+
+-(instancetype)provideStyleToTutorial{
+    self.tutorial.style = self.style;
+    return self;
 }
 
 -(instancetype)hold{
@@ -651,10 +709,21 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
     }
 }
 
+-(instancetype)withoutObeyingBounds{
+    self.shouldDisplayEvenOutsideTheViewBounds = YES;
+    return self;
+}
+
+-(instancetype)obeyingBounds{
+    self.shouldDisplayEvenOutsideTheViewBounds = NO;
+    return self;
+}
+
 -(CGSize)intrinsicContentSize{
     if(self.shouldResizeItselfAccordingToContents){
-        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2) - self.contentPadding * 2, MAXFLOAT)].height;
-        return CGSizeMake(CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2), requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
+        float controlWidth = CPTUTORIAL_SCREEN_WIDTH - (self.horizontalMargin * 2);
+        float requiredHeight = [textLabel sizeThatFits:CGSizeMake(controlWidth - (self.contentPadding * 2), MAXFLOAT)].height;
+        return CGSizeMake(controlWidth, requiredHeight + self.contentPadding * 2 + [self tipSizeForDisplay].height);
     }else{
         return [super intrinsicContentSize];
     }

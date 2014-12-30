@@ -6,6 +6,7 @@
 
 #import "CPTutorial.h"
 #import "CPTutorialInvisibleProxyView.h"
+#import "CPTutorialTargetTouchIndicatorView.h"
 
 #define CPTUTORIAL_NAME_FORMAT (@"_CPTutorial_%@")
 #define CPTUTORIAL_KEY(x) ([NSString stringWithFormat:CPTUTORIAL_NAME_FORMAT, x])
@@ -123,6 +124,16 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return proxy;
 }
 
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame{
+    return [self targetTouchIndicatorAt:frame withAnimationDelay:0];
+}
+
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay{
+    CPTutorialTargetTouchIndicatorView *view = [[CPTutorialTargetTouchIndicatorView alloc] initWithFrame:frame];
+    [view beginAnimatingAfterDelay:delay];
+    return view;
+}
+
 +(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{
     return [self displayWithName:tutorialName actions:actions completion:nil];
 }
@@ -164,6 +175,9 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     }
     lastAddedBalloon.nextBalloon = balloon;
     lastAddedBalloon = balloon;
+    if(self.style){
+        balloon.style = self.style;
+    }
 }
 
 +(CPTutorial*)endSteps{
@@ -191,8 +205,15 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     }
 }
 
+-(instancetype)pauseIfOn:(id)target{
+    if(self.currentBalloon.targetView == target || self.currentBalloon == target){
+        [self.currentBalloon hold];
+    }
+    return self;
+}
+
 -(instancetype)resumeIfOn:(id)target{
-    if(self.currentBalloon.targetView == target){
+    if(self.currentBalloon.targetView == target || self.currentBalloon == target){
         [self.currentBalloon dismiss];
     }
     return self;

@@ -27,7 +27,16 @@
 -(instancetype)initWithFrame:(CGRect)frame{
     self = [super initWithFrame:frame];
     [super setOpaque:NO];
+    [super setUserInteractionEnabled:NO];
     return self;
+}
+
+-(void)setUserInteractionEnabled:(BOOL)userInteractionEnabled{
+    if(userInteractionEnabled){
+        return;
+    }else{
+        [super setUserInteractionEnabled:userInteractionEnabled];
+    }
 }
 
 +(instancetype)proxyView{

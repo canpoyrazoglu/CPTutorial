@@ -50,6 +50,7 @@ typedef enum{
     TutorialBalloonStateDesignMode
 }TutorialBalloonState;
 
+typedef NSDictionary CPTutorialBalloonStyle;
 
 
 IB_DESIGNABLE
@@ -142,6 +143,8 @@ IB_DESIGNABLE
 @property(nonatomic) TutorialBalloonState balloonState;
 @property(readonly, nonatomic) UILabel *textLabel;
 
+@property(copy) CPTutorialAction blockToExecuteBeforeDisplaying;
+
 -(instancetype)hold;
 -(instancetype)signal;
 
@@ -159,8 +162,16 @@ IB_DESIGNABLE
  */
 -(void)makeStyleDefaultForAllBalloons;
 
+@property(nonatomic) CPTutorialBalloonStyle *style;
+
+-(instancetype)withStyle:(CPTutorialBalloonStyle*)style;
+-(instancetype)withoutObeyingBounds;
+-(instancetype)obeyingBounds;
+-(instancetype)provideStyleToTutorial;
+
 @property(nonatomic) CPTutorial *tutorial;
 @property CPTutorialBalloon *nextBalloon;
 @property BOOL shouldHoldAfterBeingDismissed;
+@property BOOL shouldDisplayEvenOutsideTheViewBounds;
 
 @end

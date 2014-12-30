@@ -6,18 +6,19 @@
 
 #import "CPTutorialTargetTouchIndicatorView.h"
 
-@implementation CPTutorialTargetTouchIndicatorView{
-    BOOL shouldStopAnimating;
-}
+@implementation CPTutorialTargetTouchIndicatorView
 
 -(void)refreshLayout{
+    self.layer.masksToBounds = YES;
     self.layer.cornerRadius = self.frame.size.width / 2;
     self.layer.borderColor = [UIColor whiteColor].CGColor;
-    self.layer.borderWidth = 2;
-    self.backgroundColor = [UIColor redColor];
+    self.layer.borderWidth = 4;
+    self.backgroundColor = [UIColor colorWithWhite:1 alpha:0.5];
 }
 
 -(void)initializeView{
+    self.translatesAutoresizingMaskIntoConstraints = NO;
+    self.userInteractionEnabled = NO;
     [self refreshLayout];
     [self beginAnimating];
 }
@@ -25,11 +26,26 @@
 -(void)didMoveToSuperview{
     [super didMoveToSuperview];
     [self refreshLayout];
+    if(!self.superview){
+        [self endAnimating];
+    }else{
+        [self beginAnimating];
+    }
 }
 
 -(void)didMoveToWindow{
     [super didMoveToWindow];
     [self refreshLayout];
+    if(!self.window){
+        [self endAnimating];
+    }else{
+        [self beginAnimating];
+    }
+}
+
+-(void)removeFromSuperview{
+    [self endAnimating];
+    [super removeFromSuperview];
 }
 
 -(instancetype)init{
@@ -50,27 +66,42 @@
     return self;
 }
 
--(void)animate{
-    if(shouldStopAnimating){
-        shouldStopAnimating = NO;
-        return;
-    }
-    [UIView animateWithDuration:1.f animations:^{
-        self.alpha = 0;
-        self.transform = CGAffineTransformMakeScale(2, 2);
-    } completion:^(BOOL finished) {
-        self.transform = CGAffineTransformMakeScale(0.01, 0.01);
-        [UIView animateWithDuration:0.4 animations:^{
-            self.alpha = 0.5;
-            self.transform = CGAffineTransformIdentity;
-        } completion:^(BOOL finished) {
-             [self animate];
-        }];
-    }];
+-(instancetype)display{
+    [[[[UIApplication sharedApplication] delegate] window] addSubview:self];
+    [self refreshLayout];
+    return self;
 }
 
+-(void)animateAfterDelay:(float)delay{
+    self.opaque = NO;
+    self.alpha = 1;
+    self.transform = CGAffineTransformMakeScale(0.01, 0.01);
+    [UIView animateWithDuration:1.5 delay:delay
+                        options:(UIViewAnimationOptionRepeat
+                                 | UIViewAnimationOptionCurveEaseInOut
+                                 | UIViewAnimationOptionTransitionNone) animations:^{
+                            self.alpha = 0;
+                            self.transform = CGAffineTransformIdentity;
+                        } completion:^(BOOL finished) {
+                            if(finished){
+                                self.alpha = 1;
+                            }
+                        }];
+}
+
+
 -(void)beginAnimating{
-    [self animate];
+    [self beginAnimatingAfterDelay:0];
+}
+
+-(void)beginAnimatingAfterDelay:(float)delay{
+    [self refreshLayout];
+    [self endAnimating];
+    [self animateAfterDelay:delay];
+}
+
+-(void)endAnimating{
+    [self.layer removeAllAnimations];
 }
 
 @end

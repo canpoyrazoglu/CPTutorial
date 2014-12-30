@@ -32,12 +32,15 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"
 #import "UIView+CPTutorial.h"
+#import "CPTutorialDisplayability.h"
+#import "CPTutorialDisplayable.h"
 
 @interface CPTutorial : NSObject
 
 @property(readonly) NSString *name;
 @property(readonly) CPTutorialBalloon *firstBalloon;
 @property(readonly) CPTutorialBalloon *currentBalloon;
+@property CPTutorialBalloonStyle *style;
 
 +(BOOL)shouldDisplayTutorialWithName:(NSString*)name;
 +(void)markTutorialAsCompleted:(NSString*)tipName;
@@ -60,6 +63,7 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
  Name of the tutorial. This can be anything as long as it's unique in your app. It will determine whether this tutorial is going to be displayed ever again or not.
  @param actions
  Tutorial block to execute. Multiple calls to display methods are managed by the framework and they will display one after another properly after dismissal.
+ @note If the tutorial has been displayed before, the action block will not execured at all. It can be safely used for executing one-time events 
  @return The tutorial if the tutorial is displaying, or nil if it won't be displayed (in case it has been displayed before in a previous session).
  */
 +(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions;
@@ -80,6 +84,7 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 -(instancetype)refresh;
 -(instancetype)step;
 -(instancetype)resumeIfOn:(id)target;
+-(instancetype)pauseIfOn:(id)target;
 
 -(instancetype)insert:(CPTutorialAction)actions;
 
@@ -89,6 +94,7 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 -(void)addBalloon:(CPTutorialBalloon*)balloon;
 -(instancetype)completeWith:(CPTutorialAction)completion;
 +(UIView*)placeholderAt:(CGRect)frame;
-
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame;
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay;
 
 @end
