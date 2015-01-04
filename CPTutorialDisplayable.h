@@ -5,6 +5,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "CPTutorial.h"
 
 @interface CPTutorialDisplayable : UIView<CPTutorialDisplayability>
 
