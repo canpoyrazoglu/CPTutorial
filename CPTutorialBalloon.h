@@ -50,6 +50,8 @@ typedef enum{
     TutorialBalloonStateDesignMode
 }TutorialBalloonState;
 
+typedef NSDictionary CPTutorialBalloonStyle;
+
 
 IB_DESIGNABLE
 @interface CPTutorialBalloon : UIView<CPTutorialView>
@@ -122,6 +124,8 @@ IB_DESIGNABLE
 
 /// Horizontal margin size of the baloon, in points.
 @property(nonatomic) IBInspectable float horizontalMargin;
+
+@property IBInspectable CGRect containerFrame;
 
 /**
  Set YES to make the appearance of this balloon default for all balloons this session.

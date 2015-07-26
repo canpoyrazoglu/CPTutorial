@@ -31,9 +31,7 @@ static NSMutableArray *tutorialsDisplayedThisSession;
 }
 
 -(instancetype)resume{
-    self.currentBalloon.shouldHoldAfterBeingDismissed = NO;
-    [self.currentBalloon signal];
-    [self refresh];
+    [self.currentBalloon dismiss];
     return self;
 }
 
@@ -57,7 +55,9 @@ static NSMutableArray *tutorialsDisplayedThisSession;
 -(instancetype)step{
     _currentBalloon = self.currentBalloon.nextBalloon;
     [self checkCompletion];
-    [self resume];
+    self.currentBalloon.shouldHoldAfterBeingDismissed = NO;
+    [self.currentBalloon signal];
+    [self refresh];
     return self;
 }
 
@@ -211,6 +211,7 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     }
     return self;
 }
+
 
 -(instancetype)resumeIfOn:(id)target{
     if(self.currentBalloon.targetView == target || self.currentBalloon == target){

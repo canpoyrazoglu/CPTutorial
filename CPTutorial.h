@@ -16,10 +16,6 @@
 #define CPTUTORIAL_WINDOWFRAME ([UIApplication sharedApplication].keyWindow.frame)
 #endif
 
-@class CPTutorialDisplayable;
-@class CPTutorialBalloon;
-
-
 @protocol CPTutorialView<NSObject>
 
 @required
@@ -32,8 +28,6 @@
 
 typedef void (^CPTutorialAction)();
 typedef void (^CPTutorialCompletion)(BOOL didDisplay);
-
-typedef NSDictionary CPTutorialBalloonStyle;
 
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"

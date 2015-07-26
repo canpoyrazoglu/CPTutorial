@@ -264,6 +264,10 @@ static NSMutableDictionary *_CPTutorialBalloonDefaults;
         return;
     }
     CGRect targetContainerFrame = CPTUTORIAL_WINDOWFRAME;
+    if(!CGRectIsEmpty(self.containerFrame)){
+        targetContainerFrame = self.containerFrame;
+    }
+    
     targetContainerFrame.origin.y = 40;
     targetContainerFrame.size.height -= targetContainerFrame.origin.y * 2;
     BOOL isContainedInTargetVisibleArea = CGRectContainsRect(targetContainerFrame, self.frame);

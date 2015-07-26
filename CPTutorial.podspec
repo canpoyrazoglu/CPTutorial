@@ -22,7 +22,7 @@ Pod::Spec.new do |s|
 
   s.platform     = :ios, "7.0"
 
-  s.source       = { :git => "https://github.com/can16358p/CPTutorial.git", :commit => "6e3c5bd139a729ac9fcb6fd802bca678a99ef621" }
+  s.source       = { :git => "https://github.com/can16358p/CPTutorial.git", :tag => "v0.1.4" }
 
   s.source_files  = "*.{h,m}"
 
