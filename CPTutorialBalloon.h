@@ -50,8 +50,6 @@ typedef enum{
     TutorialBalloonStateDesignMode
 }TutorialBalloonState;
 
-typedef NSDictionary CPTutorialBalloonStyle;
-
 
 IB_DESIGNABLE
 @interface CPTutorialBalloon : UIView<CPTutorialView>

@@ -5,6 +5,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "CPTutorialBalloon.h"
 
 @interface CPTutorialShadowView : UIView
 

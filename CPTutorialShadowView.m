@@ -6,6 +6,7 @@
 //
 
 #import "CPTutorialShadowView.h"
+#import "CPTutorialBalloon.h"
 
 @implementation CPTutorialShadowView
 

@@ -28,6 +28,7 @@
 
 typedef void (^CPTutorialAction)();
 typedef void (^CPTutorialCompletion)(BOOL didDisplay);
+typedef NSDictionary CPTutorialBalloonStyle;
 
 #import <Foundation/Foundation.h>
 #import "CPTutorialBalloon.h"
