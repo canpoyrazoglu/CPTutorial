@@ -10,7 +10,7 @@
 @interface CPTutorialTargetTouchIndicatorView : CPTutorialDisplayable
 
 -(void)beginAnimating;
--(void)beginAnimatingAfterDelay:(float)delay;
+-(void)beginAnimatingAfterDelay:(float)delay extraVisible:(BOOL)extraVisible;
 -(void)endAnimating;
 -(instancetype)display;
 

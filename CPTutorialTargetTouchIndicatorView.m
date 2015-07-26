@@ -72,13 +72,13 @@
     return self;
 }
 
--(void)animateAfterDelay:(float)delay{
+-(void)animateAfterDelay:(float)delay extraVisible:(BOOL)extraVisible{
     self.opaque = NO;
-    self.alpha = 1;
+    self.alpha = extraVisible ? 2 : 1;
     self.transform = CGAffineTransformMakeScale(0.01, 0.01);
     [UIView animateWithDuration:1.5 delay:delay
                         options:(UIViewAnimationOptionRepeat
-                                 | UIViewAnimationOptionCurveEaseInOut
+                                 | (extraVisible ? UIViewAnimationCurveEaseOut : UIViewAnimationOptionCurveEaseInOut)
                                  | UIViewAnimationOptionTransitionNone) animations:^{
                             self.alpha = 0;
                             self.transform = CGAffineTransformIdentity;
@@ -91,13 +91,13 @@
 
 
 -(void)beginAnimating{
-    [self beginAnimatingAfterDelay:0];
+    [self beginAnimatingAfterDelay:0 extraVisible:NO];
 }
 
--(void)beginAnimatingAfterDelay:(float)delay{
+-(void)beginAnimatingAfterDelay:(float)delay extraVisible:(BOOL)extraVisible{
     [self refreshLayout];
     [self endAnimating];
-    [self animateAfterDelay:delay];
+    [self animateAfterDelay:delay extraVisible:extraVisible];
 }
 
 -(void)endAnimating{

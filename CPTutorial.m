@@ -35,6 +35,7 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return self;
 }
 
+
 -(void)checkCompletion{
     if(!self.currentBalloon){
         [CPTutorial markTutorialAsCompleted:self.name];
@@ -88,7 +89,7 @@ static NSMutableArray *tutorialsDisplayedThisSession;
 }
 
 -(instancetype)init{
-    NSAssert(NO, @"Use [CPTutorial initWithName:] to initialize CPTutorial.");
+    NSAssert(NO, @"Use [CPTutorial initWithName:] to initialize CPTutorial. Pass in a unique name, doesn't matter what it is.");
     return nil;
 }
 
@@ -102,8 +103,8 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return [CPTutorial shouldDisplayTutorialWithName:self.name];
 }
 
-+(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions completion:(CPTutorialCompletion)completion{
-    if(![CPTutorial shouldDisplayTutorialWithName:tutorialName]){
++(CPTutorial*)displayWithName:(NSString*)tutorialName forceIfAlreadyCompleted:(BOOL)forceIfCompleted actions:(CPTutorialAction)actions completion:(CPTutorialCompletion)completion{
+    if(!forceIfCompleted && ![CPTutorial shouldDisplayTutorialWithName:tutorialName]){
         if(completion){
             completion(NO);
         }
@@ -119,6 +120,10 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     }
 }
 
++(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions completion:(CPTutorialCompletion)completion{
+    return [self displayWithName:tutorialName forceIfAlreadyCompleted:NO actions:actions completion:completion];
+}
+
 +(UIView*)placeholderAt:(CGRect)frame{
     CPTutorialInvisibleProxyView *proxy = [[CPTutorialInvisibleProxyView alloc] initWithFrame:frame];
     return proxy;
@@ -128,10 +133,18 @@ static NSMutableArray *tutorialsDisplayedThisSession;
     return [self targetTouchIndicatorAt:frame withAnimationDelay:0];
 }
 
-+(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay{
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay extraVisible:(BOOL)extraVisible{
     CPTutorialTargetTouchIndicatorView *view = [[CPTutorialTargetTouchIndicatorView alloc] initWithFrame:frame];
-    [view beginAnimatingAfterDelay:delay];
+    [view beginAnimatingAfterDelay:delay extraVisible:extraVisible];
     return view;
+}
+
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay{
+    return [self targetTouchIndicatorAt:frame withAnimationDelay:delay extraVisible:NO];
+}
+
++(CPTutorial*)displayWithName:(NSString*)tutorialName forceIfAlreadyCompleted:(BOOL)forceIfCompleted actions:(CPTutorialAction)actions{
+    return [self displayWithName:tutorialName forceIfAlreadyCompleted:forceIfCompleted actions:actions completion:nil];
 }
 
 +(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions{

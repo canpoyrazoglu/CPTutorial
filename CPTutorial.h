@@ -68,6 +68,8 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
  */
 +(CPTutorial*)displayWithName:(NSString*)tutorialName actions:(CPTutorialAction)actions;
 
++(CPTutorial*)displayWithName:(NSString*)tutorialName forceIfAlreadyCompleted:(BOOL)forceIfCompleted actions:(CPTutorialAction)actions;
+
 /** Prevents the currently waiting (delayed) tutorial from being displayed.
  @param tutorialName
  Name of the tutorial to cancel.
@@ -96,5 +98,7 @@ typedef void (^CPTutorialCompletion)(BOOL didDisplay);
 +(UIView*)placeholderAt:(CGRect)frame;
 +(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame;
 +(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay;
+
++(CPTutorialDisplayable*)targetTouchIndicatorAt:(CGRect)frame withAnimationDelay:(NSTimeInterval)delay extraVisible:(BOOL)extraVisible;
 
 @end
